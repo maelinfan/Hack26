@@ -1,0 +1,8 @@
+[
+  { "id": "maya", "name": "Maya", "handle": "maya.climbs", "age": 24, "gender": "woman", "avatar_url": "https://i.pravatar.cc/150?img=47", "verified": true },
+  { "id": "jordan", "name": "Jordan", "handle": "jordan.boulders", "age": 25, "gender": "man", "avatar_url": "https://i.pravatar.cc/150?img=12", "verified": true },
+  { "id": "sam", "name": "Sam", "handle": "sam.plays", "age": 23, "gender": "man", "avatar_url": "https://i.pravatar.cc/150?img=33", "verified": true },
+  { "id": "riley", "name": "Riley", "handle": "riley.birds", "age": 26, "gender": "nonbinary", "avatar_url": "https://i.pravatar.cc/150?img=5", "verified": true },
+  { "id": "devon", "name": "Devon", "handle": "devon.builds", "age": 31, "gender": "man", "avatar_url": "https://i.pravatar.cc/150?img=15", "verified": true },
+  { "id": "priya", "name": "Priya", "handle": "priya.sketches", "age": 22, "gender": "woman", "avatar_url": "https://i.pravatar.cc/150?img=45", "verified": true }
+]
