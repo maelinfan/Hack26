@@ -16,7 +16,14 @@ export const HomeIcon = ({ className, filled }: P) => (
   </svg>
 );
 
-export const NearbyIcon = ({ className, filled }: P) => (
+export const ShieldCheckIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M12 3 5 6v5.5c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5V6z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
+
+export const NearbyIcon =({ className, filled }: P) => (
   <svg {...base} className={className}>
     <path
       d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"

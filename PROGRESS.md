@@ -7,14 +7,14 @@
 - App shell: /app/(ui) layout (430px column), BottomNav (Home, Meet nearby), AuthGate, useSession (localStorage `user_id`)
 - Login: single "Connect your Meta account" button, signs in as Maya (mock auth)
 - Home placeholder (avatar, handle, Log out); /nearby is a placeholder
+- /nearby: Meet nearby toggle, 30 min / 1 hr / 2 hrs duration picker, live countdown (fake state, no API), "18+ only, public places only, verified" note; added ShieldCheckIcon to Icons
 ## In progress
 (nothing)
 ## Next (Person 2)
-1. Meet nearby toggle screen with availability timer (+ "18+ only, public places only, verified" note)
-2. Proposal card with countdown (mock data)
-3. Interests editor, Filters screen
-4. Confirmed screen, /sim page with draggable pins and "open as" buttons (needed for the Jordan window)
-5. AI panel
+1. Proposal card with countdown (mock data)
+2. Interests editor, Filters screen
+3. Confirmed screen, /sim page with draggable pins and "open as" buttons (needed for the Jordan window)
+4. AI panel
 ## Notes / decisions
 - Node installed via winget; a terminal opened before install needs a restart to see `node`.
 - Login always signs in as Maya. Other personas (e.g. Jordan) will be opened from /sim.
