@@ -94,6 +94,16 @@ Res when active (A's view; B's view is mirrored, so `why` is the text written fo
     "venue": null, "plan_reason": null, "tool_calls": null } }
 ```
 When `state` is `both_accepted` the plan is generating (UI shows "Finding a spot..."). When `confirmed`: `venue` = `{ "id","name","address","category","lat","lng","open_until" }`, plus `plan_reason` and `tool_calls` (for the AI panel).
+
+`tool_calls` is an ordered array, one entry per tool the venue agent called (the same shape is stored in `proposals.tool_calls`):
+```
+[ { "step": 1, "tool": "get_nearby_venues", "args": { "lat":30.29, "lng":-97.74, "radius_m":1200, "category":"cafe" },
+    "result": [ { "id":"spider-house", "name":"Spider House Cafe", "category":"cafe", "distance_m":610 } ] },
+  { "step": 2, "tool": "get_open_hours", "args": { "venue_id":"spider-house", "time":"2026-10-24T23:41:20Z" },
+    "result": { "open": true, "closes_at":"2026-10-25T07:00:00Z" } },
+  { "step": 3, "tool": "propose_plan", "args": { "venue_id":"spider-house", "reason":"..." }, "result": { "ok": true } } ]
+```
+`step` starts at 1 and is at most 5; `tool` is one of the three tools in section 7; `args` and `result` are exactly what was passed to and returned from the tool. Example file: `/data/mock/proposal-confirmed.json`.
 When `declined`/`expired`: `{ "proposal": null, "last_outcome":"expired"|"declined" }` once, then searching again.
 
 ### POST /api/proposal/:id/respond

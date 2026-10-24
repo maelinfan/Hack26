@@ -18,7 +18,6 @@ Product: an Instagram-style feature that matches nearby people with similar inte
 - Keep edits small and focused on one task at a time. Don't refactor things I didn't ask about.
 - Don't add new dependencies without asking.
 - Commit-friendly: after each working change, tell me what to test.
-- I'm learning while building. For non-trivial pieces, explain the approach in a few lines first and let me try writing it before you show a full solution, unless I say "just do it" or we are short on time.
 - Never print or commit secrets. API keys live in .env.local only.
 
 # Commands
