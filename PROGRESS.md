@@ -17,8 +17,9 @@
 - Backend Phase 1 (Person 1): /data/personas.json (10 users, follows, filters, presence), /data/venues.json (15 Austin venues), /lib/types.ts, /lib/db.ts (Supabase client), GET /api/users (matches /data/mock/users.json), temporary GET /api/health
 - Backend Phase 2 (Person 1): Supabase schema (supabase/schema.sql, 6 tables), POST /api/sim/reset (seeds personas), GET /api/users now reads the DB (identical to mock)
 - Backend Phase 3 (Person 1): PUT /api/filters, POST/DELETE /api/presence, safety stubs (block, report, share-plan, checkin); zod added for request validation. Live now: Person 2 can call these instead of localStorage
+- Backend Phase 4 (Person 1): /lib/ai.ts extractTags (cache -> model -> keyword fallback, zod-validated, 8s timeout), PUT /api/interests (saves tags on the user), /api/sim/reset seeds ai_cache for the demo personas. Real model call untested until MODEL_API_KEY is set
 ## In progress
-- Backend Phase 4: extractTags + PUT /api/interests
+- Waiting on a Meta Model API key (billing); then Phase 5 matching
 ## Next (Person 2)
 1. /sim page with draggable pins and "open as" buttons (needed for the Jordan window)
 ## Notes / decisions

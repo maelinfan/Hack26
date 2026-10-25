@@ -1,5 +1,6 @@
 import personas from "@/data/personas.json";
 import { db } from "@/lib/db";
+import { cacheKey } from "@/lib/ai";
 
 // POST /api/sim/reset -> wipe proposals (this also clears cooldowns, they live in the
 // proposals table) and put the 10 seed personas back to their starting state.
@@ -26,6 +27,17 @@ export async function POST() {
     ["follows", db.from("follows").insert(personas.follows)],
     ["filters", db.from("filters").insert(personas.filters)],
     ["presence", db.from("presence").insert(personas.presence)],
+    // Hand-seeded AI fallbacks: each persona's interests text -> their tags, so the demo
+    // personas never depend on the model being reachable (SPEC §7).
+    [
+      "ai_cache",
+      db.from("ai_cache").upsert(
+        personas.users.map((u) => ({
+          key: cacheKey("extractTags", u.interests_raw),
+          value: { tags: u.tags, adjacent_tags: u.adjacent_tags },
+        })),
+      ),
+    ],
   ] as const;
 
   for (const [name, request] of steps) {
