@@ -2,7 +2,14 @@ import { after } from "next/server";
 import { rerankCandidates } from "@/lib/ai";
 import { SCORE_THRESHOLD } from "@/lib/config";
 import { db } from "@/lib/db";
-import { haversineMiles, matchScore, passesFilters, relationshipOf, toRerankCandidate } from "@/lib/matching";
+import {
+  haversineMiles,
+  matchScore,
+  mutualConnections,
+  passesFilters,
+  relationshipOf,
+  toRerankCandidate,
+} from "@/lib/matching";
 import type { Filters, Follow, Presence, User } from "@/lib/types";
 
 // POST /api/sim/warm -> pre-fill the AI cache for the demo cast, so the first take isn't a
@@ -17,19 +24,21 @@ const CAST = ["maya", "jordan", "priya", "sam"];
 export async function POST(req: Request) {
   const dry = new URL(req.url).searchParams.get("dry") === "1";
 
-  const [users, filters, follows, presence] = await Promise.all([
+  const [users, filters, follows, presence, allNames] = await Promise.all([
     db.from("users").select("*").in("id", CAST),
     db.from("filters").select("*").in("user_id", CAST),
     db.from("follows").select("*"),
     db.from("presence").select("*").in("user_id", CAST),
+    db.from("users").select("id,name"),
   ]);
-  const err = users.error ?? filters.error ?? follows.error ?? presence.error;
+  const err = users.error ?? filters.error ?? follows.error ?? presence.error ?? allNames.error;
   if (err) return Response.json({ ok: false, error: err.message }, { status: 500 });
 
   const U = new Map((users.data as User[]).map((u) => [u.id, u]));
   const F = new Map((filters.data as Filters[]).map((f) => [f.user_id, f]));
   const P = new Map((presence.data as Presence[]).map((p) => [p.user_id, p]));
   const edges = follows.data as Follow[];
+  const names = new Map((allNames.data ?? []).map((u) => [u.id as string, u.name as string]));
   if (CAST.some((id) => !U.has(id) || !F.has(id) || !P.has(id))) {
     return Response.json({ ok: false, error: "demo cast missing: run POST /api/sim/reset first" }, { status: 409 });
   }
@@ -57,7 +66,7 @@ export async function POST(req: Request) {
 
     for (let mask = 1; mask < 1 << eligible.length; mask++) {
       const subset = eligible.filter((_, i) => mask & (1 << i));
-      jobs.push({ me, candidates: subset.map((c) => toRerankCandidate(me, c.other, c.score)) });
+      jobs.push({ me, candidates: subset.map((c) => toRerankCandidate(me, c.other, c.score, mutualConnections(meId, c.other.id, edges, names))) });
     }
   }
 

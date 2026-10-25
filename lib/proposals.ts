@@ -1,7 +1,15 @@
 import { db } from "@/lib/db";
 import { MATCH_RATE_LIMIT_MS, OUTCOME_WINDOW_MS } from "@/lib/config";
-import { planInBackground } from "@/lib/planner";
-import { distanceBucket, haversineMiles, relationshipOf, matchInBackground, rematchPair, sharedTags } from "@/lib/matching";
+import { clearReplanning, planInBackground, type VenueMeta } from "@/lib/planner";
+import {
+  distanceBucket,
+  haversineMiles,
+  matchInBackground,
+  mutualConnections,
+  relationshipOf,
+  rematchPair,
+  sharedTags,
+} from "@/lib/matching";
 import type { Follow, Presence, ProposalRow, User } from "@/lib/types";
 
 // What GET /api/proposal returns (SPEC §6). Built per viewer, so each person sees
@@ -34,10 +42,11 @@ async function buildView(userId: string, row: ProposalRow) {
   const iAmA = row.user_a === userId;
   const otherId = iAmA ? row.user_b : row.user_a;
 
-  const [usersRes, presenceRes, followsRes] = await Promise.all([
+  const [usersRes, presenceRes, followsRes, namesRes] = await Promise.all([
     db.from("users").select("*").in("id", [userId, otherId]),
     db.from("presence").select("*").in("user_id", [userId, otherId]),
-    db.from("follows").select("*").or(`follower_id.eq.${userId},followee_id.eq.${userId}`),
+    db.from("follows").select("*"), // whole (small) graph: mutual connections need both people's edges
+    db.from("users").select("id,name"),
   ]);
   const me = (usersRes.data as User[] | null)?.find((u) => u.id === userId);
   const other = (usersRes.data as User[] | null)?.find((u) => u.id === otherId);
@@ -45,6 +54,13 @@ async function buildView(userId: string, row: ProposalRow) {
   const myPos = presences.find((p) => p.user_id === userId);
   const theirPos = presences.find((p) => p.user_id === otherId);
   if (!me || !other) throw new Error("proposal references a missing user");
+
+  const names = new Map((namesRes.data ?? []).map((u) => [u.id as string, u.name as string]));
+
+  // The venue carries private bookkeeping (_meta). Split it off: clients get the plain venue plus
+  // derived fields (walking times, a notice after a re-plan, whether a re-plan is running).
+  const { _meta, ...venue } = (row.venue ?? {}) as Record<string, unknown> & { _meta?: VenueMeta };
+  const hasVenue = row.venue != null;
 
   const myResponse = iAmA ? row.a_response : row.b_response;
   const theirResponse = iAmA ? row.b_response : row.a_response;
@@ -63,12 +79,24 @@ async function buildView(userId: string, row: ProposalRow) {
     },
     why: (iAmA ? row.why_a : row.why_b) ?? "",
     shared_tags: sharedTags(me, other),
+    mutual_connections: mutualConnections(userId, otherId, (followsRes.data ?? []) as Follow[], names),
     icebreakers: row.icebreakers ?? [],
     my_response: myResponse,
     other_responded: theirResponse !== null, // only THAT they answered, never what
     expires_at: new Date(row.expires_at).toISOString(),
     server_now: new Date().toISOString(),
-    venue: row.venue ?? null,
+    venue: hasVenue ? venue : null,
+    walking:
+      hasVenue && _meta?.walk_minutes
+        ? { you_minutes: _meta.walk_minutes[userId] ?? null, other_minutes: _meta.walk_minutes[otherId] ?? null }
+        : null,
+    notice: _meta?.late
+      ? `${_meta.late.by} is running about ${_meta.late.minutes} min late. ` +
+        (_meta.late.same
+          ? `Plan checked: ${venue.name} still works.`
+          : `Plan updated: moved from ${_meta.late.previous} to ${venue.name}.`)
+      : null,
+    replanning: !!_meta?.replanning,
     plan_reason: row.plan_reason ?? null,
     tool_calls: row.tool_calls ?? null,
   };
@@ -258,4 +286,47 @@ export async function cancelIfOutOfRange(userId: string) {
     .eq("state", "pending")
     .select("id");
   if (ended && ended.length > 0) rematchPair(p.user_a, p.user_b);
+}
+
+// ---- running late ------------------------------------------------------------------------------
+
+export type LateResult =
+  | { status: 200; body: { ok: true; replanning: true } }
+  | { status: 403 | 404 | 409; body: { ok: false; error: string } };
+
+const MAX_REPLANS = 2;
+
+// "I'm running late": flag the proposal as re-planning and let the venue agent pick again, around
+// the later meeting time and closer to the person running late. Answers at once; the UI polls.
+export async function requestLate(id: string, userId: string, minutes: number): Promise<LateResult> {
+  const { data } = await db.from("proposals").select("*").eq("id", id).maybeSingle();
+  const row = data as ProposalRow | null;
+  if (!row) return { status: 404, body: { ok: false, error: "proposal not found" } };
+  if (row.user_a !== userId && row.user_b !== userId) {
+    return { status: 403, body: { ok: false, error: "not part of this proposal" } };
+  }
+  const venue = row.venue as (Record<string, unknown> & { _meta?: VenueMeta }) | null;
+  if (row.state !== "confirmed" || !venue) {
+    return { status: 409, body: { ok: false, error: `proposal is ${row.state}; it must be confirmed` } };
+  }
+  const meta: VenueMeta = venue._meta ?? { walk_minutes: {} };
+  if (meta.replanning) return { status: 409, body: { ok: false, error: "already re-planning" } };
+  if ((meta.replans ?? 0) >= MAX_REPLANS) {
+    return { status: 409, body: { ok: false, error: `plan already changed ${MAX_REPLANS} times` } };
+  }
+
+  const { data: marked } = await db
+    .from("proposals")
+    .update({ venue: { ...venue, _meta: { ...meta, replanning: true } } })
+    .eq("id", id)
+    .eq("state", "confirmed")
+    .select("id");
+  if (!marked || marked.length === 0) {
+    return { status: 409, body: { ok: false, error: "proposal is no longer confirmed" } };
+  }
+  if (!planInBackground(id, { userId, minutes })) {
+    await clearReplanning(id); // the planner declined to start: undo the flag so nothing hangs
+    return { status: 409, body: { ok: false, error: "re-plan could not start; try again in a few seconds" } };
+  }
+  return { status: 200, body: { ok: true, replanning: true } };
 }

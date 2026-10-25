@@ -45,17 +45,20 @@ export default function ConfirmedPage() {
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       let done = false;
+      let delay = 1500;
       try {
         const res = await fetch(`/api/proposal?user_id=${encodeURIComponent(userId)}`, { cache: "no-store" });
         const body = await res.json().catch(() => null);
         if (!cancelled && res.ok && body) {
           setData({ proposal: body.proposal ?? null });
-          done = body.proposal?.state === "confirmed" || !body.proposal;
+          done = !body.proposal;
+          // Keep polling after confirmation so a "running late" re-plan shows up; slower when idle.
+          if (body.proposal?.state === "confirmed" && !body.proposal.replanning) delay = 3000;
         }
       } catch {
         // retry on the next tick
       }
-      if (!cancelled && !done) timer = setTimeout(poll, 1500);
+      if (!cancelled && !done) timer = setTimeout(poll, delay);
     };
     poll();
     return () => {
@@ -94,6 +97,7 @@ export default function ConfirmedPage() {
   }
 
   const { other, venue, plan_reason, icebreakers } = proposal;
+  const walking = proposal.walking ?? null;
 
   return (
     <div className="pb-8">
@@ -119,12 +123,23 @@ export default function ConfirmedPage() {
           </p>
         </div>
 
-        <VenueCard venue={venue} />
+        {proposal.notice && (
+          <p className="mt-6 rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-800">{proposal.notice}</p>
+        )}
+        {proposal.replanning && (
+          <p className="mt-3 rounded-xl bg-neutral-100 px-3 py-2.5 text-sm font-semibold text-neutral-600">
+            Updating the plan...
+          </p>
+        )}
+
+        <VenueCard venue={venue} walking={walking} otherName={other.name} />
 
         <section className={card}>
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Why this spot</p>
           <p className="mt-1 text-sm text-neutral-800">{plan_reason ?? ""}</p>
         </section>
+
+        <RunningLateCard userId={user.id} proposalId={proposal.id} replanning={!!proposal.replanning} />
 
         <IcebreakerCard options={icebreakers} />
         <SafetySection otherName={other.name} venueName={venue.name} excludeIds={[user.id, users.find((u) => u.handle === other.handle)?.id ?? ""]} />
@@ -138,7 +153,15 @@ export default function ConfirmedPage() {
   );
 }
 
-function VenueCard({ venue }: { venue: Venue }) {
+function VenueCard({
+  venue,
+  walking,
+  otherName,
+}: {
+  venue: Venue;
+  walking: { you_minutes: number | null; other_minutes: number | null } | null;
+  otherName: string;
+}) {
   return (
     <section className="mt-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
       <MiniMap />
@@ -147,6 +170,11 @@ function VenueCard({ venue }: { venue: Venue }) {
         <p className="text-sm capitalize text-neutral-500">{venue.category}</p>
         <p className="mt-2 text-sm text-neutral-800">{venue.address}</p>
         <p className="mt-1 text-sm font-semibold text-green-600">Open until {formatTime(venue.open_until)}</p>
+        {walking && walking.you_minutes != null && walking.other_minutes != null && (
+          <p className="mt-1 text-sm text-neutral-600">
+            {walking.you_minutes} min walk for you · {walking.other_minutes} min for {otherName}
+          </p>
+        )}
         <a
           href={`https://www.google.com/maps/search/?api=1&query=${venue.lat},${venue.lng}`}
           target="_blank"
@@ -180,6 +208,60 @@ function MiniMap() {
         <circle cy="-10" r="6" fill="#fff" />
       </g>
     </svg>
+  );
+}
+
+// "I'm running late": asks the venue agent to re-plan (POST /api/proposal/:id/late). The server
+// answers at once; the polling above then shows "Updating the plan..." and finally the new plan.
+const LATE_OPTIONS = [5, 10, 15, 20];
+
+function RunningLateCard({ userId, proposalId, replanning }: { userId: string; proposalId: string; replanning: boolean }) {
+  const [minutes, setMinutes] = useState(10);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const send = async () => {
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/proposal/${encodeURIComponent(proposalId)}/late`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ user_id: userId, minutes }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error ?? "Couldn't update the plan.");
+      }
+    } catch {
+      setError("Couldn't reach the server.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <section className={card}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Running late?</p>
+      <p className="mt-1 text-xs text-neutral-500">Tell us and the AI will check the plan still works, and move it if needed.</p>
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        {LATE_OPTIONS.map((m) => (
+          <button
+            key={m}
+            onClick={() => setMinutes(m)}
+            className={`rounded-lg border py-2 text-sm font-semibold ${
+              minutes === m ? "border-pink-500 text-pink-600" : "border-neutral-300 text-neutral-700"
+            }`}
+          >
+            {m} min
+          </button>
+        ))}
+      </div>
+      <button onClick={send} disabled={sending || replanning} className={`mt-3 w-full py-2.5 disabled:opacity-40 ${outlineBtn}`}>
+        {replanning ? "Updating the plan..." : `I'm running ${minutes} min late`}
+      </button>
+      {error && <p className="mt-2 text-center text-xs text-red-600">{error}</p>}
+    </section>
   );
 }
 
