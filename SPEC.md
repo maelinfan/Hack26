@@ -132,7 +132,7 @@ All calls: JSON output only, validate with zod, on failure or timeout (8s) use `
    Constraints in the system prompt: public place only, open now for at least 90 more minutes, fits shared interests, prefer cafes/parks for a first meeting. Every tool call and result is saved to `proposals.tool_calls` for the AI panel in the demo.
 
 ## 8. Data files
-- `/data/venues.json`: ~15 REAL public places near campus/downtown: `{ id, name, address, category, lat, lng, tags[], hours:{ open:"07:00", close:"22:00" } }`.
+- `/data/venues.json`: ~15 REAL public places near campus/downtown: `{ id, name, address, category, lat, lng, tags[], hours:{ open:"07:00", close:"22:00", overrides?:{ mon|tue|...|sun: {open,close} | null } } }`. `open`/`close` apply every day; an override replaces them for one day, `null` = closed. `"24:00"` means midnight. (Internal to the backend; the `venue` object sent to clients is unchanged.)
 - `/data/personas.json`: 8-10 seed users (see below) + follows edges.
 
 Seed personas (spread across 3 map clusters so some are in range and some are not):

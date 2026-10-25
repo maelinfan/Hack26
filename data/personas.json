@@ -1,0 +1,161 @@
+{
+  "users": [
+    {
+      "id": "maya", "name": "Maya", "handle": "maya.climbs", "age": 24, "gender": "woman",
+      "bio": "Climbing gym regular. Makes lo-fi beats nobody asked for.",
+      "interests_raw": "I climb, make bad lo-fi beats, and hunt for ramen",
+      "tags": [
+        {"tag": "bouldering", "category": "sport", "weight": 0.9},
+        {"tag": "music production", "category": "creative", "weight": 0.7},
+        {"tag": "ramen", "category": "food", "weight": 0.6}
+      ],
+      "adjacent_tags": ["hiking", "indie music", "coffee"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=47"
+    },
+    {
+      "id": "jordan", "name": "Jordan", "handle": "jordan.boulders", "age": 25, "gender": "man",
+      "bio": "Boulders most evenings, shoots film on weekends.",
+      "interests_raw": "I boulder most evenings, shoot film on weekends, and chase a good coffee or ramen spot",
+      "tags": [
+        {"tag": "bouldering", "category": "sport", "weight": 0.9},
+        {"tag": "film photography", "category": "creative", "weight": 0.7},
+        {"tag": "coffee", "category": "food", "weight": 0.7},
+        {"tag": "ramen", "category": "food", "weight": 0.5}
+      ],
+      "adjacent_tags": ["hiking", "street photography", "indie music"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=12"
+    },
+    {
+      "id": "sam", "name": "Sam", "handle": "sam.plays", "age": 23, "gender": "man",
+      "bio": "Pickup soccer on Sundays, board game nights the rest of the week.",
+      "interests_raw": "pickup soccer, board games, and ramen",
+      "tags": [
+        {"tag": "pickup soccer", "category": "sport", "weight": 0.9},
+        {"tag": "board games", "category": "social", "weight": 0.7},
+        {"tag": "ramen", "category": "food", "weight": 0.6}
+      ],
+      "adjacent_tags": ["bouldering", "trivia", "pickup basketball"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=33"
+    },
+    {
+      "id": "riley", "name": "Riley", "handle": "riley.birds", "age": 26, "gender": "nonbinary",
+      "bio": "Dawn hikes, binoculars, a very patient sourdough starter.",
+      "interests_raw": "hiking, birding, and baking sourdough",
+      "tags": [
+        {"tag": "hiking", "category": "sport", "weight": 0.9},
+        {"tag": "birding", "category": "nature", "weight": 0.8},
+        {"tag": "sourdough", "category": "food", "weight": 0.6}
+      ],
+      "adjacent_tags": ["camping", "photography", "coffee"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=5"
+    },
+    {
+      "id": "devon", "name": "Devon", "handle": "devon.builds", "age": 31, "gender": "man",
+      "bio": "Building a startup. Running and cold plunges to cope.",
+      "interests_raw": "startups, running, cold plunge",
+      "tags": [
+        {"tag": "startups", "category": "career", "weight": 0.9},
+        {"tag": "running", "category": "sport", "weight": 0.8},
+        {"tag": "cold plunge", "category": "wellness", "weight": 0.7}
+      ],
+      "adjacent_tags": ["fitness", "podcasts", "coffee"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=15"
+    },
+    {
+      "id": "priya", "name": "Priya", "handle": "priya.sketches", "age": 22, "gender": "woman",
+      "bio": "Sketchbook in my bag, matcha in my hand, chalk on my fingers.",
+      "interests_raw": "bouldering, matcha, and sketching",
+      "tags": [
+        {"tag": "bouldering", "category": "sport", "weight": 0.8},
+        {"tag": "matcha", "category": "food", "weight": 0.7},
+        {"tag": "sketching", "category": "creative", "weight": 0.8}
+      ],
+      "adjacent_tags": ["indie music", "art museums", "cafes"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=45"
+    },
+    {
+      "id": "ava", "name": "Ava", "handle": "ava.frames", "age": 27, "gender": "woman",
+      "bio": "Film cameras and thrift store finds.",
+      "interests_raw": "film photography, thrifting, and coffee",
+      "tags": [
+        {"tag": "film photography", "category": "creative", "weight": 0.9},
+        {"tag": "thrifting", "category": "lifestyle", "weight": 0.6},
+        {"tag": "coffee", "category": "food", "weight": 0.7}
+      ],
+      "adjacent_tags": ["street photography", "art museums", "ramen"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=49"
+    },
+    {
+      "id": "marcus", "name": "Marcus", "handle": "marcus.reads", "age": 28, "gender": "man",
+      "bio": "Always mid-novel. Will beat you at chess.",
+      "interests_raw": "reading, chess, and coffee shops",
+      "tags": [
+        {"tag": "reading", "category": "hobby", "weight": 0.9},
+        {"tag": "chess", "category": "game", "weight": 0.6},
+        {"tag": "coffee", "category": "food", "weight": 0.6}
+      ],
+      "adjacent_tags": ["board games", "writing", "trivia"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=51"
+    },
+    {
+      "id": "luca", "name": "Luca", "handle": "luca.rides", "age": 24, "gender": "man",
+      "bio": "Lives on two wheels. Lives far from campus.",
+      "interests_raw": "cycling, coffee, and live music",
+      "tags": [
+        {"tag": "cycling", "category": "sport", "weight": 0.9},
+        {"tag": "coffee", "category": "food", "weight": 0.7},
+        {"tag": "live music", "category": "music", "weight": 0.6}
+      ],
+      "adjacent_tags": ["mountain biking", "indie music", "camping"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=68"
+    },
+    {
+      "id": "zoe", "name": "Zoe", "handle": "zoe.makes", "age": 29, "gender": "nonbinary",
+      "bio": "Clay under my nails, sketchbook nearby.",
+      "interests_raw": "ceramics, sketching, and thrifting",
+      "tags": [
+        {"tag": "ceramics", "category": "creative", "weight": 0.9},
+        {"tag": "sketching", "category": "creative", "weight": 0.6},
+        {"tag": "thrifting", "category": "lifestyle", "weight": 0.5}
+      ],
+      "adjacent_tags": ["painting", "art museums", "matcha"],
+      "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=9"
+    }
+  ],
+  "follows": [
+    {"follower_id": "maya", "followee_id": "jordan", "close_friend": false},
+    {"follower_id": "jordan", "followee_id": "maya", "close_friend": true},
+    {"follower_id": "sam", "followee_id": "maya", "close_friend": false},
+    {"follower_id": "maya", "followee_id": "priya", "close_friend": false},
+    {"follower_id": "priya", "followee_id": "jordan", "close_friend": false},
+    {"follower_id": "riley", "followee_id": "ava", "close_friend": false},
+    {"follower_id": "ava", "followee_id": "riley", "close_friend": false},
+    {"follower_id": "ava", "followee_id": "priya", "close_friend": false},
+    {"follower_id": "marcus", "followee_id": "zoe", "close_friend": false},
+    {"follower_id": "devon", "followee_id": "luca", "close_friend": false}
+  ],
+  "filters": [
+    {"user_id": "maya", "age_min": 21, "age_max": 30, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},
+    {"user_id": "jordan", "age_min": 21, "age_max": 32, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},
+    {"user_id": "sam", "age_min": 21, "age_max": 32, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "riley", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "devon", "age_min": 25, "age_max": 40, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "priya", "age_min": 20, "age_max": 30, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},
+    {"user_id": "ava", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "marcus", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "luca", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "zoe", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1}
+  ],
+  "presence": [
+    {"user_id": "maya", "lat": 30.2849, "lng": -97.7341, "available_until": null, "active": false},
+    {"user_id": "jordan", "lat": 30.2866, "lng": -97.7340, "available_until": null, "active": false},
+    {"user_id": "priya", "lat": 30.2905, "lng": -97.7350, "available_until": null, "active": false},
+    {"user_id": "sam", "lat": 30.2849, "lng": -97.7480, "available_until": null, "active": false},
+    {"user_id": "riley", "lat": 30.2640, "lng": -97.7340, "available_until": null, "active": false},
+    {"user_id": "devon", "lat": 30.2635, "lng": -97.7355, "available_until": null, "active": false},
+    {"user_id": "ava", "lat": 30.2650, "lng": -97.7320, "available_until": null, "active": false},
+    {"user_id": "marcus", "lat": 30.2630, "lng": -97.7330, "available_until": null, "active": false},
+    {"user_id": "zoe", "lat": 30.2645, "lng": -97.7310, "available_until": null, "active": false},
+    {"user_id": "luca", "lat": 30.3900, "lng": -97.7200, "available_until": null, "active": false}
+  ]
+}
