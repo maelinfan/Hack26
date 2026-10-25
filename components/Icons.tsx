@@ -30,6 +30,45 @@ export const CheckBadgeIcon = ({ className }: P) => (
   </svg>
 );
 
+export const ChevronLeftIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="m15 5-7 7 7 7" />
+  </svg>
+);
+
+export const ChevronRightIcon = ({ className }: P) => (
+  <svg {...base} width={20} height={20} className={className}>
+    <path d="m9 5 7 7-7 7" />
+  </svg>
+);
+
+export const CheckIcon = ({ className }: P) => (
+  <svg {...base} width={14} height={14} strokeWidth={2.5} className={className}>
+    <path d="m5 12 5 5 9-10" />
+  </svg>
+);
+
+export const XIcon = ({ className }: P) => (
+  <svg {...base} width={14} height={14} className={className}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </svg>
+);
+
+export const TagIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z" />
+    <circle cx="8" cy="8" r="1.5" />
+  </svg>
+);
+
+export const SlidersIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="8" cy="17" r="2" />
+  </svg>
+);
+
 export const NearbyIcon =({ className, filled }: P) => (
   <svg {...base} className={className}>
     <path
