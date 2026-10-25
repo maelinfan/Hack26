@@ -10,5 +10,13 @@
   {"id": "p9", "user_id": "devon", "image": "https://picsum.photos/seed/cold-plunge/600/600", "caption": "Cold plunge, day 30", "likes": 76, "time": "1d"},
   {"id": "p10", "user_id": "maya", "image": "https://picsum.photos/seed/climb-wall/600/600", "caption": "Project wall, round three", "likes": 173, "time": "2d"},
   {"id": "p11", "user_id": "maya", "image": "https://picsum.photos/seed/ramen-bowl/600/600", "caption": "Post-climb ramen is undefeated", "likes": 129, "time": "4d"},
-  {"id": "p12", "user_id": "jordan", "image": "https://picsum.photos/seed/film-camera/600/600", "caption": "Film camera, first roll back", "likes": 96, "time": "5d"}
+  {"id": "p12", "user_id": "jordan", "image": "https://picsum.photos/seed/film-camera/600/600", "caption": "Film camera, first roll back", "likes": 96, "time": "5d"},
+  {"id": "m1", "user_id": "maelin", "image": "/posts/maelin-1.jpg", "caption": "", "likes": 96, "time": "1w"},
+  {"id": "m2", "user_id": "maelin", "image": "/posts/maelin-2.jpg", "caption": "", "likes": 148, "time": "2w"},
+  {"id": "m3", "user_id": "maelin", "image": "/posts/maelin-3.jpg", "caption": "40k steps later...", "likes": 212, "time": "3w"},
+  {"id": "m4", "user_id": "maelin", "image": "/posts/maelin-4.jpg", "caption": "", "likes": 187, "time": "4w"},
+  {"id": "m5", "user_id": "maelin", "image": "/posts/maelin-5.jpg", "caption": "looking on the bright side xx", "likes": 134, "time": "5w"},
+  {"id": "m6", "user_id": "maelin", "image": "/posts/maelin-6.jpg", "caption": "", "likes": 71, "time": "6w"},
+  {"id": "m7", "user_id": "maelin", "image": "/posts/maelin-7.jpg", "caption": "", "likes": 83, "time": "7w"},
+  {"id": "m8", "user_id": "maelin", "image": "/posts/maelin-8.jpg", "caption": "country girl 4ever", "likes": 164, "time": "8w"}
 ]

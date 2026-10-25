@@ -8,5 +8,6 @@
   {"id": "ava", "name": "Ava", "handle": "ava.frames", "age": 27, "gender": "woman", "avatar_url": "https://i.pravatar.cc/150?img=49", "verified": true},
   {"id": "marcus", "name": "Marcus", "handle": "marcus.reads", "age": 28, "gender": "man", "avatar_url": "https://i.pravatar.cc/150?img=51", "verified": true},
   {"id": "luca", "name": "Luca", "handle": "luca.rides", "age": 24, "gender": "man", "avatar_url": "https://i.pravatar.cc/150?img=68", "verified": true},
-  {"id": "zoe", "name": "Zoe", "handle": "zoe.makes", "age": 29, "gender": "nonbinary", "avatar_url": "https://i.pravatar.cc/150?img=9", "verified": true}
+  {"id": "zoe", "name": "Zoe", "handle": "zoe.makes", "age": 29, "gender": "nonbinary", "avatar_url": "https://i.pravatar.cc/150?img=9", "verified": true},
+  {"id": "maelin", "name": "Maelin", "handle": "maelinfan", "age": 18, "gender": "woman", "avatar_url": "/avatars/maelin.jpg", "verified": true}
 ]
