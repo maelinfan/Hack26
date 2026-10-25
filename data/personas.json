@@ -70,7 +70,7 @@
         {"tag": "matcha", "category": "food", "weight": 0.7},
         {"tag": "sketching", "category": "creative", "weight": 0.8}
       ],
-      "adjacent_tags": ["indie music", "art museums", "cafes"],
+      "adjacent_tags": ["indie music", "art museums", "ramen"],
       "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=45"
     },
     {

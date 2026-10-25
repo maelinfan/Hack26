@@ -18,8 +18,9 @@
 - Backend Phase 2 (Person 1): Supabase schema (supabase/schema.sql, 6 tables), POST /api/sim/reset (seeds personas), GET /api/users now reads the DB (identical to mock)
 - Backend Phase 3 (Person 1): PUT /api/filters, POST/DELETE /api/presence, safety stubs (block, report, share-plan, checkin); zod added for request validation. Live now: Person 2 can call these instead of localStorage
 - Backend Phase 4 (Person 1): /lib/ai.ts extractTags (cache -> model -> keyword fallback, zod-validated, 8s timeout), PUT /api/interests (saves tags on the user), /api/sim/reset seeds ai_cache for the demo personas. Real model call untested until MODEL_API_KEY is set
+- Backend Phase 5 (Person 1): matching (/lib/matching.ts: hard filters, score, top 3), rerankCandidates (model, template fallback, cached), GET /api/proposal (mirrored view, no coordinates/answer leaks, last_outcome once, lazy expiry + rematch). POST /api/presence now starts a search after responding. Real Muse Spark calls verified. Try it: Maya + Jordan + Priya online -> Maya/Jordan proposal; let it expire -> Maya gets Priya
 ## In progress
-- Waiting on a Meta Model API key (billing); then Phase 5 matching
+- Backend Phase 6: POST /api/proposal/:id/respond (accept/decline/state machine), DELETE presence ends proposals
 ## Next (Person 2)
 1. /sim page with draggable pins and "open as" buttons (needed for the Jordan window)
 ## Notes / decisions

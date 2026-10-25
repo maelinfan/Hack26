@@ -82,7 +82,8 @@ Without `minutes` (pin drag), only the position changes: an unexpired `available
 Errors (all endpoints): `400 { ok:false, error }` for a bad body, `404` for an unknown `user_id`.
 
 ### GET /api/proposal?user_id=maya   (poll every 1.5s)
-Res when nothing: `{ "proposal": null, "searching": true }`
+Res when nothing: `{ "proposal": null, "searching": true }` (`"searching": false` if the user's "Meet nearby" is off or its window ran out).
+The first match for a pair takes a few seconds (AI call, runs after the response); the UI just keeps polling. `shared_tags` lists real overlaps: exact matches first, then adjacent ones. A `confirmed` proposal stays visible while the user is still on.
 Res when active (A's view; B's view is mirrored, so `why` is the text written for the requesting user):
 ```
 { "proposal": {

@@ -72,3 +72,30 @@ export type UserSummary = Pick<
   User,
   "id" | "name" | "handle" | "age" | "gender" | "avatar_url" | "verified"
 >;
+
+// A viewer's relationship to another user (SPEC §3): strongest first, "none" if no follow either way.
+export type Relationship = "close_friends" | "mutual" | "following" | "follows_you" | "none";
+
+export type Distance = "very_close" | "nearby";
+
+export type ProposalState = "pending" | "both_accepted" | "confirmed" | "declined" | "expired";
+
+// A row of the proposals table.
+export type ProposalRow = {
+  id: string;
+  user_a: string;
+  user_b: string;
+  state: ProposalState;
+  a_response: "accept" | "decline" | null;
+  b_response: "accept" | "decline" | null;
+  decline_reason: "not_now" | "not_interested" | null;
+  why_a: string | null;
+  why_b: string | null;
+  icebreakers: string[] | null;
+  score: number | null;
+  venue: unknown;
+  plan_reason: string | null;
+  tool_calls: unknown;
+  created_at: string;
+  expires_at: string;
+};

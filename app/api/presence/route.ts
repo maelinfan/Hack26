@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { badRequest, parseBody, UNKNOWN_USER, unknownUser } from "@/lib/api";
+import { matchInBackground } from "@/lib/matching";
 
 const PresenceBody = z.object({
   user_id: z.string().min(1),
@@ -49,7 +50,9 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: dbError.message }, { status: 500 });
   }
 
-  // TODO (Phase 5): if (active) await runMatchForUser(data.user_id)
+  // Someone just came online (or moved): look for a match, but after responding, so the toggle
+  // stays instant. The UI's polling picks the proposal up.
+  if (active) matchInBackground(data.user_id);
   return Response.json({ active, available_until: availableUntil });
 }
 
