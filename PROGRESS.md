@@ -15,8 +15,10 @@
 - AI panel (components/AIPanel.tsx): collapsible "How AI picked this" with extracted tags (loadInterests), match reasoning (why, shared_tags, score), venue agent tool_calls step list (tap for raw JSON; hidden when null). On Confirmed (all sections) and under ProposalCard (sections 1-2)
 - Confirmed screen revisions: Copy button removed; 3 "Conversation starters" (SPEC now has `icebreakers[3]`, mock files updated); safety flow reworked (pick friend -> Send -> "Sent!" -> Send update; status On my way / I've arrived / Heading home auto-updates the friend); venue closing times snap to the next full hour in mocks
 - Backend Phase 1 (Person 1): /data/personas.json (10 users, follows, filters, presence), /data/venues.json (15 Austin venues), /lib/types.ts, /lib/db.ts (Supabase client), GET /api/users (matches /data/mock/users.json), temporary GET /api/health
+- Backend Phase 2 (Person 1): Supabase schema (supabase/schema.sql, 6 tables), POST /api/sim/reset (seeds personas), GET /api/users now reads the DB (identical to mock)
+- Backend Phase 3 (Person 1): PUT /api/filters, POST/DELETE /api/presence, safety stubs (block, report, share-plan, checkin); zod added for request validation. Live now: Person 2 can call these instead of localStorage
 ## In progress
-- Backend Phase 2: Supabase schema + seed + /api/sim/reset
+- Backend Phase 4: extractTags + PUT /api/interests
 ## Next (Person 2)
 1. /sim page with draggable pins and "open as" buttons (needed for the Jordan window)
 ## Notes / decisions

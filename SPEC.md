@@ -77,7 +77,9 @@ Res: `{ "ok":true }`
 ### POST /api/presence
 Req: `{ "user_id":"maya", "lat":30.2849, "lng":-97.7341, "minutes":120 }`  (also used by the sim when a pin is dragged; reuse the existing `available_until` if not provided)
 Res: `{ "active":true, "available_until":"2026-10-25T01:00:00Z" }`
-`DELETE /api/presence?user_id=maya` turns the feature off.
+Without `minutes` (pin drag), only the position changes: an unexpired `available_until` is kept; otherwise the user stays off and the response is `{ "active":false, "available_until":null }` (dragging a pin never switches someone on).
+`DELETE /api/presence?user_id=maya` turns the feature off. Res: `{ "ok":true, "active":false }`.
+Errors (all endpoints): `400 { ok:false, error }` for a bad body, `404` for an unknown `user_id`.
 
 ### GET /api/proposal?user_id=maya   (poll every 1.5s)
 Res when nothing: `{ "proposal": null, "searching": true }`
