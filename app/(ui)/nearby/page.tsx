@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Avatar from "@/components/Avatar";
 import ProposalCard from "@/components/ProposalCard";
-import { NearbyIcon, ShieldCheckIcon } from "@/components/Icons";
+import Link from "next/link";
+import { ChevronRightIcon, NearbyIcon, ShieldCheckIcon, SlidersIcon, TagIcon } from "@/components/Icons";
 import { useCurrentUser } from "@/components/useSession";
 
 const DURATIONS = [
@@ -116,6 +117,19 @@ export default function NearbyPage() {
             }`}
           />
         </button>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-neutral-200">
+        <Link href="/nearby/interests" className="flex items-center gap-3 p-4">
+          <TagIcon className="text-neutral-700" />
+          <span className="flex-1 font-semibold">Interests</span>
+          <ChevronRightIcon className="text-neutral-400" />
+        </Link>
+        <Link href="/nearby/filters" className="flex items-center gap-3 border-t border-neutral-200 p-4">
+          <SlidersIcon className="text-neutral-700" />
+          <span className="flex-1 font-semibold">Filters</span>
+          <ChevronRightIcon className="text-neutral-400" />
+        </Link>
       </div>
 
       {showProposal && (
