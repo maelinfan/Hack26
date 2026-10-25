@@ -3,7 +3,7 @@
 Paste this file into every AI coding session. If code and spec disagree, fix the spec first, then both sides.
 
 ## 0. Product in one paragraph
-Users (18+) turn on "Meet nearby" for a time window. The server finds a high-scoring nearby person who passes both users' filters, creates ONE proposal shown to both at the same time, with a 45s countdown. Both accept -> an AI venue agent picks a public place -> confirmed screen with icebreaker. Decline or expiry -> both released, cooldown on the pair, new match is found.
+Users (18+) turn on "Meet nearby" for a time window. The server finds a high-scoring nearby person who passes both users' filters, creates ONE proposal shown to both at the same time, with a 45s countdown. Both accept -> an AI venue agent picks a public place -> confirmed screen with conversation starters. Decline or expiry -> both released, cooldown on the pair, new match is found.
 
 ## 1. Stack and ownership
 - Next.js (App Router, TypeScript) + Supabase Postgres. Polling every 1500ms (no websockets).
@@ -28,7 +28,8 @@ proposals(id uuid pk, user_a text, user_b text,
           state text,        -- pending | both_accepted | confirmed | declined | expired
           a_response text, b_response text,      -- null | accept | decline
           decline_reason text,                   -- not_now | not_interested | null
-          why_a text, why_b text, icebreaker text, score float,
+          why_a text, why_b text, icebreakers jsonb,   -- text[] of exactly 3 conversation starters
+          score float,
           venue jsonb, plan_reason text, tool_calls jsonb,
           created_at timestamptz, expires_at timestamptz)
 ai_cache(key text pk, value jsonb)        -- hash of prompt -> response (also hand-seeded fallbacks)
@@ -88,7 +89,7 @@ Res when active (A's view; B's view is mirrored, so `why` is the text written fo
                "relationship":"mutual", "distance":"nearby" },
     "why":"You both climb and love ramen. Jordan has been to Crux Climbing too.",
     "shared_tags":["bouldering","ramen"],
-    "icebreaker":"What's the hardest V-grade you've sent?",
+    "icebreakers":["What's the hardest V-grade you've sent?", "How did you first get into bouldering?", "What's your go-to coffee order after a session?"],  -- exactly 3, spoken in person (no chat feature)
     "my_response": null, "other_responded": false,   -- do NOT leak the other's actual answer while pending
     "expires_at":"2026-10-24T23:41:45Z", "server_now":"2026-10-24T23:41:00Z",
     "venue": null, "plan_reason": null, "tool_calls": null } }
@@ -121,8 +122,8 @@ All calls: JSON output only, validate with zod, on failure or timeout (8s) use `
 
 1. `extractTags(text) -> { tags:[{tag,category,weight}], adjacent_tags:[string] }`
    Normalize to lowercase canonical tags (e.g. "bouldering" not "I climb rocks"). Max 8 tags.
-2. `rerankCandidates(me, candidates[3]) -> { chosen_id, why_for_me, why_for_them, icebreaker }`
-   `why_for_*` is 1-2 friendly sentences, second person, references real shared tags only. No invented facts, no mention of exact location.
+2. `rerankCandidates(me, candidates[3]) -> { chosen_id, why_for_me, why_for_them, icebreakers[3] }`
+   `icebreakers` are 3 short, distinct questions about shared interests that work face to face. `why_for_*` is 1-2 friendly sentences, second person, references real shared tags only. No invented facts, no mention of exact location.
 3. `planMeetup(a, b, now) -> { venue_id, reason, tool_calls[] }`
    Tool-calling loop (max 5 steps). Tools run against `/data/venues.json`:
    - `get_nearby_venues({ lat, lng, radius_m, category? })` -> venues near the MIDPOINT of the two users
@@ -146,7 +147,7 @@ Seed personas (spread across 3 map clusters so some are in range and some are no
 | plus 2-4 more | | | one far away (out of radius) |
 
 ## 9. UI contract (Person 2)
-Screens: Login ("Continue as ..."), Home/Meet nearby (toggle + "open for 2 hrs" timer), Interests (chips + free text, shows extracted tags), Filters, Proposal card (avatar, why, shared tags, countdown ring, Accept/Not now/Not interested), Confirmed (venue, mini map, icebreaker, "Share my plans", "I'm here / I'm leaving", Report/Block), Post-meetup feedback (UI only), `/sim` (map with draggable pins, per-user "open as" buttons, reset button), AI panel (collapsible: extracted tags, match reasoning, venue agent tool calls). Show a visible "18+ only, public places only, verified" note on the toggle screen. Mobile-first at ~390px width, Instagram look (white, thin icons, gradient accent).
+Screens: Login ("Continue as ..."), Home/Meet nearby (toggle + "open for 2 hrs" timer), Interests (chips + free text, shows extracted tags), Filters, Proposal card (avatar, why, shared tags, countdown ring, Accept/Not now/Not interested), Confirmed (venue, mini map, conversation starters, "Share my plans" (pick a friend, Send, then "Send update"), status On my way / I've arrived / Heading home, Report/Block), Post-meetup feedback (UI only), `/sim` (map with draggable pins, per-user "open as" buttons, reset button), AI panel (collapsible: extracted tags, match reasoning, venue agent tool calls). Show a visible "18+ only, public places only, verified" note on the toggle screen. Mobile-first at ~390px width, Instagram look (white, thin icons, gradient accent).
 
 ## 10. Definition of done for the demo path
 Two browser windows (Maya, Jordan). Both online -> both get the same proposal within ~2s -> Maya declines (or lets it expire) -> new proposal with Priya appears -> accept both -> venue agent runs, tool calls visible -> confirmed screen on both. `POST /api/sim/reset` returns to the start state.
