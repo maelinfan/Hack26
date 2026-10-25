@@ -22,16 +22,17 @@
 - Backend Phase 6 (Person 1): POST /api/proposal/:id/respond (accept/decline, 403/404/409, first answer counts, race-safe), decline -> decliner searches first, cooldown + permanent not_interested, DELETE presence and out-of-range pin drag end a pending proposal. 27 e2e checks pass. both_accepted has no venue yet (Phase 7)
 - /sim (app/sim/page.tsx, desktop control panel outside the (ui) layout): map with draggable avatar pins (start positions from personas.json presence), Campus/Wide view toggle, selected user's 1 mi radius circle, venue dots, user list with distance from the selected user and "Open as" links, Reset button. Pins saved in localStorage `sim:pins`; on drag end it POSTs /api/presence {user_id, lat, lng} and Reset POSTs /api/sim/reset (both fire-and-forget, errors ignored until the backend has them)
 - Session moved from localStorage to sessionStorage (per tab) so two windows can be different users; AuthGate signs the tab in from `/?as=<id>` (what "Open as" links use) and cleans the URL
-- Backend call budget (Person 1): every paid model call goes through callModel in /lib/ai.ts; hard cap MODEL_MAX_CALLS (default 300), count stored in DB, shown at /api/health
+- Backend call budget (Person 1): every paid model call goes through callModel in /lib/ai.ts; hard cap MODEL_MAX_CALLS (default 300), count stored in DB, shown at /api/sim/status
 - Backend Phase 7 (Person 1): venue agent (/lib/planner.ts, /lib/venues.ts). After both accept, Muse Spark calls get_nearby_venues -> get_open_hours -> propose_plan (code enforces open >= 90 min); result saved, proposal -> confirmed in ~10-15s. Falls back to a code planner (same tool steps) if the model fails. Verified with the real model in daytime. At night few venues are open: set PLAN_NOW=<ISO time> in .env.local to simulate daytime for filming
+- Backend Phase 8 (Person 1), parts 1-2: removed temporary /api/health; added GET /api/sim/status (db check, AI calls used/cap, PLAN_NOW); fixed `npm run build` without keys (lazy db client; connection() on /api/users); POST /api/sim/warm pre-fills the AI cache for the demo cast (20 cases, ~15 paid calls once). After warm-up the first Maya+Jordan proposal appears in ~2s with 0 paid calls. Re-run warm after changing personas or the AI prompt
 ## In progress
-- Backend Phase 8: demo hardening (seed AI cache, full dry run, cleanup)
+- Backend Phase 8 part 3: full dry run with Person 2 (two windows via /sim)
 ## Next (Person 2)
 1. Wire UI to real API once Phase 5/6 exist (poll /api/proposal, respond, interests, filters, presence); remove "Preview confirmed screen" link
 ## Notes / decisions
 - Node installed via winget; a terminal opened before install needs a restart to see `node`.
 - Login always signs in as Maya. Other personas (e.g. Jordan) are opened from /sim ("Open as" opens a new tab signed in as them). Interests/filters stay in localStorage keyed by user_id, so they are shared between tabs for the same user.
-- `npm install` is needed after pulling (Person 1 added @supabase/supabase-js). `npm run build` fails at "collect page data" on /api/health without `.env.local` (Supabase keys); type check itself passes.
+- `npm install` is needed after pulling (Person 1 added @supabase/supabase-js and zod). `npm run build` now works even without `.env.local` (db client is created lazily; all API routes are dynamic).
 - Mock proposal timestamps are fixed; the UI must rewrite `expires_at`/`server_now` relative to now for the countdown.
 - Edits outside Person 2 folders: deleted starter app/page.tsx; app/layout.tsx title; app/globals.css (removed dark mode, Geist font).
 - AGENTS.md was added by create-next-app (delete if unwanted).

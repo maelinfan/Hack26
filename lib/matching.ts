@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { db } from "@/lib/db";
-import { rerankCandidates } from "@/lib/ai";
+import { rerankCandidates, type RerankCandidate } from "@/lib/ai";
 import { COOLDOWN_SECONDS, PROPOSAL_TTL_SECONDS, SCORE_THRESHOLD, TOP_N } from "@/lib/config";
 import type { Distance, Filters, Follow, Presence, Relationship, User } from "@/lib/types";
 
@@ -89,6 +89,12 @@ export function sharedTags(me: User, other: User): string[] {
       .map((t) => t.tag),
   ];
   return [...new Set([...exact, ...adjacent])];
+}
+
+// What the AI is shown about one candidate. Shared with the cache warm-up so both build
+// identical inputs (and therefore identical cache keys).
+export function toRerankCandidate(me: User, other: User, score: number): RerankCandidate {
+  return { id: other.id, name: other.name, tags: other.tags, shared_tags: sharedTags(me, other), score };
 }
 
 // ---- one match at a time ---------------------------------------------------------------
@@ -242,13 +248,7 @@ async function match(userId: string): Promise<string | null> {
   // 4. AI picks one of the shortlist and writes the explanations + icebreakers.
   const result = await rerankCandidates(
     { id: me.id, name: me.name, tags: me.tags },
-    shortlist.map((c) => ({
-      id: c.user.id,
-      name: c.user.name,
-      tags: c.user.tags,
-      shared_tags: sharedTags(me, c.user),
-      score: c.score,
-    })),
+    shortlist.map((c) => toRerankCandidate(me, c.user, c.score)),
   );
   const chosen = shortlist.find((c) => c.user.id === result.chosen_id) ?? shortlist[0];
 

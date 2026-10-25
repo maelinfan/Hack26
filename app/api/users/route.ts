@@ -1,9 +1,12 @@
+import { connection } from "next/server";
 import personas from "@/data/personas.json";
 import { db } from "@/lib/db";
 import type { UserSummary } from "@/lib/types";
 
 // GET /api/users -> the list the login/sim screens use to show "Continue as ...".
 export async function GET() {
+  await connection(); // read the live database on every request, never a build-time snapshot
+
   // 1. Ask the database for the public columns only (never bio, tags or coordinates).
   const { data, error } = await db
     .from("users")
