@@ -1,19 +1,20 @@
 import personas from "@/data/personas.json";
+import { db } from "@/lib/db";
 import type { UserSummary } from "@/lib/types";
 
 // GET /api/users -> the list the login/sim screens use to show "Continue as ...".
 export async function GET() {
-  // 1. Take every seed user from the personas file.
-  // 2. Copy over only the public fields (never bio, tags or coordinates).
-  const users: UserSummary[] = personas.users.map((u) => ({
-    id: u.id,
-    name: u.name,
-    handle: u.handle,
-    age: u.age,
-    gender: u.gender as UserSummary["gender"],
-    avatar_url: u.avatar_url,
-    verified: u.verified,
-  }));
+  // 1. Ask the database for the public columns only (never bio, tags or coordinates).
+  const { data, error } = await db
+    .from("users")
+    .select("id, name, handle, age, gender, avatar_url, verified");
+
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  // 2. The database doesn't promise an order, so sort like the seed file (Maya first).
+  const order = personas.users.map((u) => u.id);
+  const rank = (id: string) => (order.includes(id) ? order.indexOf(id) : order.length);
+  const users = (data as UserSummary[]).sort((a, b) => rank(a.id) - rank(b.id));
 
   // 3. Send it back as JSON with status 200.
   return Response.json(users);
