@@ -27,8 +27,9 @@ We're more connected online than ever, and lonelier than ever. Social apps are g
 1. **Turn on "Meet nearby"** for a certain amount of time. Set your interests and who you're open to meeting (age, gender, follow status, radius).
 2. **We find one good match nearby;** someone who passes both of your filters and shares real interests with you.
 3. **Both of you see the same proposal at the same time**, with a 45-second countdown and a short, friendly reason why you two should meet.
-4. **Both accept, and an AI agent picks a public place.** It's a cafe or park that's open, near the midpoint between you, and fits what you share.
+4. **Both accept, and an AI agent picks a public place.** It's a cafe, park or landmark that's open, near the midpoint between you, and fits what you share. It also keeps the walk fair for both of you and suggests something to do there.
 5. **You get a plan and three conversation starters** to use in person. You can share your plans with a friend and check in as "on my way", "I've arrived" or "heading home".
+6. **Running late? Tell the app.** Pick 5, 10, 15 or 20 minutes and the agent re-plans around the new time, moving the spot toward whoever is running behind if that's fairer. Both of you see what changed.
 
 If either person says no, both are released and a new match is found. If someone picks "not interested", that pair is never matched again.
 
@@ -49,7 +50,7 @@ Take the AI out and this isn't the same product. Muse Spark (Meta) does four job
 | **Interest understanding** | Turns free text like *"I climb, make bad lo-fi beats, and hunt for ramen"* into canonical tags (`bouldering`, `music production`, `ramen`) plus adjacent interests for fuzzy matching. |
 | **Match reranking** | Looks at the top 3 candidates that survived filtering and scoring, picks the best one for this moment, and writes a personal "why you two" for each person. It only uses real shared tags and never invents facts. |
 | **Conversation starters** | Writes 3 questions about your shared interests that work out loud, face to face. |
-| **Venue agent** | A tool-calling loop (`get_nearby_venues` → `get_open_hours` → `propose_plan`) that picks a real place near your midpoint. Every tool call is saved and shown in the app's "How AI picked this" panel. |
+| **Venue agent** | A tool-calling loop (`get_nearby_venues` → `get_open_hours` → `propose_plan`) that picks a real place near your midpoint from 28 Austin venues. It checks walking times so neither person gets a much longer walk, suggests an activity, and re-plans when someone is running late (up to 2 times). Every tool call is saved and shown in the app's "How AI picked this" panel. |
 
 The AI is also built to be reliable:
 
@@ -73,7 +74,9 @@ Presence + filters ──► Hard filters ──► Soft score (tag overlap) ─
 
 The proposal moves through `pending → both_accepted → confirmed`, or ends as `declined` or `expired`. Expiry is checked lazily on every poll. Clients poll every 1.5 seconds, so there are no websockets.
 
-Location is simulated for the demo. There's no GPS, and each user's position is set by dragging a pin on the `/sim` map.
+**Location.** By default each user's position is set by dragging a pin on the `/sim` map. On a phone, "Use my real location" on the Meet nearby screen switches to live GPS: the position updates as you move (about every 15 m or 10 s) and shows up on the `/sim` map. GPS needs HTTPS on a phone, so use a tunnel. This is experimental and hasn't been tested on a real device yet.
+
+**Mutual connections.** If you and your match both follow the same people, the proposal says so ("You both follow Ava"), and the AI can mention it in its reasoning.
 
 ## Tech stack
 
@@ -143,7 +146,8 @@ You can check the status at `GET /api/sim/status`. It shows the database connect
 3. Turn on **Meet nearby** in both tabs. Both see the same proposal within about 2 seconds.
 4. Have Maya decline (or let it expire). She's matched with **Priya**.
 5. Accept on both sides. The venue agent runs and its tool calls are visible.
-6. Both land on the **confirmed** screen with a venue, a map and conversation starters.
+6. Both land on the **confirmed** screen with a venue, walking times, a map and conversation starters.
+7. Tap **Running late?** on one side. The agent re-plans and both screens show the update.
 
 Use **Reset** on `/sim` (or `POST /api/sim/reset`) before each run.
 
@@ -168,9 +172,8 @@ PROGRESS.md    Build log
 
 ## Roadmap
 
-- Real GPS and background presence instead of the simulated map
 - Real Instagram identity, follow graph and verification
 - Longer proposal windows (2 to 3 minutes) and push notifications
 - Group meetups and recurring interest-based meetups
 - Post-meetup feedback that feeds back into matching
-- Integration into wearables (Meta Glasses)
+- Integration into wearables (Meta Glasses, smart watches)
