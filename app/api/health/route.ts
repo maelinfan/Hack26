@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { modelUsage } from "@/lib/ai";
 
 // Temporary check that the server can reach Supabase. Safe to delete later.
 export async function GET() {
@@ -12,5 +13,6 @@ export async function GET() {
     ok: true,
     connected: true,
     users_table_exists: !error,
+    model_calls: await modelUsage(), // paid AI calls used so far / hard cap
   });
 }

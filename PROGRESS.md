@@ -22,8 +22,10 @@
 - Backend Phase 6 (Person 1): POST /api/proposal/:id/respond (accept/decline, 403/404/409, first answer counts, race-safe), decline -> decliner searches first, cooldown + permanent not_interested, DELETE presence and out-of-range pin drag end a pending proposal. 27 e2e checks pass. both_accepted has no venue yet (Phase 7)
 - /sim (app/sim/page.tsx, desktop control panel outside the (ui) layout): map with draggable avatar pins (start positions from personas.json presence), Campus/Wide view toggle, selected user's 1 mi radius circle, venue dots, user list with distance from the selected user and "Open as" links, Reset button. Pins saved in localStorage `sim:pins`; on drag end it POSTs /api/presence {user_id, lat, lng} and Reset POSTs /api/sim/reset (both fire-and-forget, errors ignored until the backend has them)
 - Session moved from localStorage to sessionStorage (per tab) so two windows can be different users; AuthGate signs the tab in from `/?as=<id>` (what "Open as" links use) and cleans the URL
+- Backend call budget (Person 1): every paid model call goes through callModel in /lib/ai.ts; hard cap MODEL_MAX_CALLS (default 300), count stored in DB, shown at /api/health
+- Backend Phase 7 (Person 1): venue agent (/lib/planner.ts, /lib/venues.ts). After both accept, Muse Spark calls get_nearby_venues -> get_open_hours -> propose_plan (code enforces open >= 90 min); result saved, proposal -> confirmed in ~10-15s. Falls back to a code planner (same tool steps) if the model fails. Verified with the real model in daytime. At night few venues are open: set PLAN_NOW=<ISO time> in .env.local to simulate daytime for filming
 ## In progress
-- Backend Phase 7: venue agent (planMeetup) -> both_accepted becomes confirmed
+- Backend Phase 8: demo hardening (seed AI cache, full dry run, cleanup)
 ## Next (Person 2)
 1. Wire UI to real API once Phase 5/6 exist (poll /api/proposal, respond, interests, filters, presence); remove "Preview confirmed screen" link
 ## Notes / decisions

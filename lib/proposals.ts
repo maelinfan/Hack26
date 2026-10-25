@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { MATCH_RATE_LIMIT_MS, OUTCOME_WINDOW_MS } from "@/lib/config";
+import { planInBackground } from "@/lib/planner";
 import { distanceBucket, haversineMiles, relationshipOf, matchInBackground, rematchPair, sharedTags } from "@/lib/matching";
 import type { Follow, Presence, ProposalRow, User } from "@/lib/types";
 
@@ -114,8 +115,12 @@ export async function getProposalFor(userId: string) {
     return row && (row.state !== "confirmed" || isOn) ? row : null;
   };
 
-  let current = await findCurrent();
-  if (current) return { proposal: await buildView(userId, current) };
+  const current = await findCurrent();
+  if (current) {
+    // A both_accepted proposal with no plan yet (e.g. the server restarted mid-plan): try again.
+    if (current.state === "both_accepted") planInBackground(current.id);
+    return { proposal: await buildView(userId, current) };
+  }
 
   // 4. Nothing yet. If the user is on, look for someone (at most once per 3s per user).
   if (!isOn) return { proposal: null, searching: false };
@@ -204,8 +209,7 @@ export async function respondToProposal(
       .eq("id", id)
       .eq("state", "pending")
       .select("id");
-    // TODO (Phase 7): if (flipped?.length) start the venue agent (planMeetup) in the background.
-    void flipped;
+    if (flipped && flipped.length > 0) planInBackground(id); // the venue agent picks a place
     return { status: 200, body: { ok: true, state: "both_accepted" } };
   }
   return { status: 200, body: { ok: true, state: "pending" } };

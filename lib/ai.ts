@@ -26,31 +26,76 @@ async function setCached(key: string, value: unknown) {
   await db.from("ai_cache").upsert({ key, value });
 }
 
+// ---- call budget --------------------------------------------------------------
+// A hard cap on paid model calls. The count lives in the database (ai_cache row "__model_calls"),
+// so restarting the dev server does NOT reset it. Once it is reached, every AI function drops to
+// its fallback and no more paid calls are made. Raise it with MODEL_MAX_CALLS in .env.local,
+// or reset it by deleting that row in Supabase.
+
+const BUDGET_KEY = "__model_calls";
+export const MODEL_MAX_CALLS = Number(process.env.MODEL_MAX_CALLS) || 300;
+
+export async function modelUsage() {
+  const { data } = await db.from("ai_cache").select("value").eq("key", BUDGET_KEY).maybeSingle();
+  const used = Number((data?.value as { count?: number } | null)?.count) || 0;
+  return { used, limit: MODEL_MAX_CALLS };
+}
+
+// Counts this call, or throws if the budget is used up. Counted BEFORE calling, so a call that
+// fails or times out (and may still be billed) is never free.
+async function spendCall() {
+  const { used, limit } = await modelUsage();
+  if (used >= limit) throw new Error(`model call budget used up (${used}/${limit})`);
+  await db.from("ai_cache").upsert({ key: BUDGET_KEY, value: { count: used + 1 } });
+  console.log(`[ai] model call ${used + 1}/${limit}`);
+}
+
 // ---- the model call --------------------------------------------------------
 
-// Asks the model for JSON and validates it. Throws on any problem (no key, timeout, bad JSON,
-// wrong shape) so callers can fall back. Uses the OpenAI-compatible /chat/completions endpoint.
-async function askJson<T>(schema: z.ZodType<T>, system: string, user: string): Promise<T> {
+// One request to the OpenAI-compatible /chat/completions endpoint. Every paid call goes through
+// here (budget check, key check, 8s timeout). Returns the raw response body.
+export type ModelResponse = {
+  choices?: {
+    message?: {
+      content?: string | null;
+      tool_calls?: { id: string; function: { name: string; arguments: string } }[];
+    };
+  }[];
+};
+
+export async function callModel(
+  payload: Record<string, unknown>,
+  timeoutMs = TIMEOUT_MS,
+): Promise<ModelResponse> {
   const apiKey = process.env.MODEL_API_KEY;
   if (!apiKey) throw new Error("MODEL_API_KEY is not set");
   const base = (process.env.MODEL_BASE_URL ?? "").replace(/\/$/, "");
 
+  await spendCall();
+  const started = Date.now();
   const res = await fetch(`${base}/chat/completions`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: process.env.MODEL_NAME,
-      temperature: 0,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    body: JSON.stringify({ model: process.env.MODEL_NAME, temperature: 0, ...payload }),
+    signal: AbortSignal.timeout(timeoutMs),
   });
-  if (!res.ok) throw new Error(`model returned HTTP ${res.status}`);
+  console.log(`[ai] model replied in ${Date.now() - started}ms (HTTP ${res.status})`);
+  if (!res.ok) {
+    const detail = (await res.text().catch(() => "")).slice(0, 300); // the API's own explanation
+    throw new Error(`model returned HTTP ${res.status}${detail ? `: ${detail}` : ""}`);
+  }
+  return res.json();
+}
 
-  const body = await res.json();
+// Asks the model for JSON and validates it. Throws on any problem (no key, budget, timeout,
+// bad JSON, wrong shape) so callers can fall back.
+async function askJson<T>(schema: z.ZodType<T>, system: string, user: string): Promise<T> {
+  const body = await callModel({
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+  });
   const text: string = body?.choices?.[0]?.message?.content ?? "";
   // Models sometimes wrap JSON in ```json fences or add a sentence; take the outermost {...}.
   const start = text.indexOf("{");
