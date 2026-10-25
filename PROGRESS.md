@@ -19,8 +19,9 @@
 - Backend Phase 3 (Person 1): PUT /api/filters, POST/DELETE /api/presence, safety stubs (block, report, share-plan, checkin); zod added for request validation. Live now: Person 2 can call these instead of localStorage
 - Backend Phase 4 (Person 1): /lib/ai.ts extractTags (cache -> model -> keyword fallback, zod-validated, 8s timeout), PUT /api/interests (saves tags on the user), /api/sim/reset seeds ai_cache for the demo personas. Real model call untested until MODEL_API_KEY is set
 - Backend Phase 5 (Person 1): matching (/lib/matching.ts: hard filters, score, top 3), rerankCandidates (model, template fallback, cached), GET /api/proposal (mirrored view, no coordinates/answer leaks, last_outcome once, lazy expiry + rematch). POST /api/presence now starts a search after responding. Real Muse Spark calls verified. Try it: Maya + Jordan + Priya online -> Maya/Jordan proposal; let it expire -> Maya gets Priya
+- Backend Phase 6 (Person 1): POST /api/proposal/:id/respond (accept/decline, 403/404/409, first answer counts, race-safe), decline -> decliner searches first, cooldown + permanent not_interested, DELETE presence and out-of-range pin drag end a pending proposal. 27 e2e checks pass. both_accepted has no venue yet (Phase 7)
 ## In progress
-- Backend Phase 6: POST /api/proposal/:id/respond (accept/decline/state machine), DELETE presence ends proposals
+- Backend Phase 7: venue agent (planMeetup) -> both_accepted becomes confirmed
 ## Next (Person 2)
 1. /sim page with draggable pins and "open as" buttons (needed for the Jordan window)
 ## Notes / decisions

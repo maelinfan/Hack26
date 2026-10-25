@@ -126,3 +126,132 @@ export async function getProposalFor(userId: string) {
   }
   return { proposal: null, searching: true };
 }
+
+// ---- responding (SPEC §5) -----------------------------------------------------------------
+
+export type RespondResult =
+  | { status: 200; body: { ok: true; state: "pending" | "both_accepted" | "declined" } }
+  | { status: 403 | 404 | 409; body: { ok: false; error: string; state?: string } };
+
+// Accept or decline. Only the first answer from each side counts, and answering a proposal that
+// is no longer pending is a 409. Each step is a conditional update ("only if still pending"),
+// so two people answering at the same instant can't corrupt the state.
+export async function respondToProposal(
+  id: string,
+  userId: string,
+  response: "accept" | "decline",
+  reason: "not_now" | "not_interested",
+): Promise<RespondResult> {
+  await expireStale(); // lazy expiry first
+
+  const read = async () => {
+    const { data } = await db.from("proposals").select("*").eq("id", id).maybeSingle();
+    return data as ProposalRow | null;
+  };
+  let row = await read();
+  if (!row) return { status: 404, body: { ok: false, error: "proposal not found" } };
+  if (row.user_a !== userId && row.user_b !== userId) {
+    return { status: 403, body: { ok: false, error: "not part of this proposal" } };
+  }
+  if (row.state !== "pending") {
+    return { status: 409, body: { ok: false, error: `proposal is already ${row.state}`, state: row.state } };
+  }
+
+  const side = row.user_a === userId ? "a_response" : "b_response";
+  const otherId = row.user_a === userId ? row.user_b : row.user_a;
+  if (row[side] !== null) return { status: 200, body: { ok: true, state: "pending" } }; // first answer counts
+
+  if (response === "decline") {
+    // Declined: both are freed. The pair goes on cooldown (the row itself is the cooldown record);
+    // "not_interested" also excludes them from each other permanently. The decliner searches first.
+    const { data } = await db
+      .from("proposals")
+      .update({ [side]: "decline", state: "declined", decline_reason: reason })
+      .eq("id", id)
+      .eq("state", "pending")
+      .select("id");
+    if (!data || data.length === 0) {
+      const now = await read();
+      return { status: 409, body: { ok: false, error: `proposal is already ${now?.state}`, state: now?.state } };
+    }
+    rematchPair(userId, otherId, userId);
+    return { status: 200, body: { ok: true, state: "declined" } };
+  }
+
+  // Accept: record it, but only if still pending and this side hasn't answered.
+  const { data: saved } = await db
+    .from("proposals")
+    .update({ [side]: "accept" })
+    .eq("id", id)
+    .eq("state", "pending")
+    .is(side, null)
+    .select("id");
+  if (!saved || saved.length === 0) {
+    const now = await read();
+    if (now && now.state !== "pending") {
+      return { status: 409, body: { ok: false, error: `proposal is already ${now.state}`, state: now.state } };
+    }
+    return { status: 200, body: { ok: true, state: "pending" } };
+  }
+
+  // Both said yes? Move to both_accepted. (Re-read, then flip only if still pending, so if both
+  // people accept at once, exactly one of the two requests performs the flip.)
+  row = await read();
+  if (row && row.a_response === "accept" && row.b_response === "accept") {
+    const { data: flipped } = await db
+      .from("proposals")
+      .update({ state: "both_accepted" })
+      .eq("id", id)
+      .eq("state", "pending")
+      .select("id");
+    // TODO (Phase 7): if (flipped?.length) start the venue agent (planMeetup) in the background.
+    void flipped;
+    return { status: 200, body: { ok: true, state: "both_accepted" } };
+  }
+  return { status: 200, body: { ok: true, state: "pending" } };
+}
+
+// ---- other ways a proposal ends -------------------------------------------------------------
+
+// A person turned "Meet nearby" off: any proposal they were still in ends, and the other
+// person is freed and starts searching again. (A confirmed plan is left alone.)
+export async function endProposalsFor(userId: string) {
+  const { data } = await db
+    .from("proposals")
+    .update({ state: "declined", decline_reason: "not_now" })
+    .in("state", ["pending", "both_accepted"])
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`)
+    .select("user_a,user_b");
+  for (const p of data ?? []) matchInBackground(p.user_a === userId ? p.user_b : p.user_a);
+}
+
+// A person moved (pin drag): if a still-pending proposal is no longer within both radii, cancel
+// it. Treated like an expiry (cooldown only), and both look for someone new.
+export async function cancelIfOutOfRange(userId: string) {
+  const { data } = await db
+    .from("proposals")
+    .select("id,user_a,user_b")
+    .eq("state", "pending")
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`)
+    .limit(1);
+  const p = data?.[0];
+  if (!p) return;
+
+  const ids = [p.user_a, p.user_b];
+  const [pos, fil] = await Promise.all([
+    db.from("presence").select("*").in("user_id", ids),
+    db.from("filters").select("user_id,radius_mi").in("user_id", ids),
+  ]);
+  const [a, b] = ids.map((id) => (pos.data ?? []).find((x) => x.user_id === id));
+  if (!a || !b) return;
+  const radius = Math.min(...ids.map((id) => (fil.data ?? []).find((f) => f.user_id === id)?.radius_mi ?? 1));
+  if (haversineMiles(a, b) <= radius) return;
+
+  const { data: ended } = await db
+    .from("proposals")
+    .update({ state: "expired" })
+    .eq("id", p.id)
+    .eq("state", "pending")
+    .select("id");
+  if (ended && ended.length > 0) rematchPair(p.user_a, p.user_b);
+}

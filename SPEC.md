@@ -113,6 +113,8 @@ When `declined`/`expired`: `{ "proposal": null, "last_outcome":"expired"|"declin
 ### POST /api/proposal/:id/respond
 Req: `{ "user_id":"maya", "response":"accept"|"decline", "reason":"not_now"|"not_interested" }`
 Res: `{ "state":"pending"|"both_accepted"|"declined", "ok":true }`
+`reason` is only used with `decline` and defaults to `not_now`. A second answer from the same side is ignored (still `200`, state unchanged). Errors: `404` unknown proposal, `403` user not in it, `409 { ok:false, error, state }` if it is no longer pending (already declined, expired or accepted by both).
+Other ways a proposal ends: the user turns "Meet nearby" off (`DELETE /api/presence`) or a pin drag puts a pending pair out of range. Both free the other person, and the other sees `last_outcome` once.
 
 ### POST /api/sim/reset
 Clears proposals and cooldowns, reseeds personas. Used before each demo take.

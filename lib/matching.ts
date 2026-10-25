@@ -131,7 +131,8 @@ export function matchInBackground(userId: string) {
 
 // Two people were just freed (proposal expired or was declined). Each looks for someone new,
 // but the one with the better next option goes first, so one can't snatch the other's best match.
-export function rematchPair(a: string, b: string) {
+// `first` forces one person to go first (the one who just declined).
+export function rematchPair(a: string, b: string, first?: string) {
   after(async () => {
     const ranked = await Promise.all(
       [a, b].map(async (id) => ({
@@ -139,7 +140,10 @@ export function rematchPair(a: string, b: string) {
         top: (await shortlistFor(id).catch(() => null))?.shortlist[0]?.score ?? 0,
       })),
     );
-    ranked.sort((x, y) => y.top - x.top || x.id.localeCompare(y.id));
+    ranked.sort(
+      (x, y) =>
+        Number(y.id === first) - Number(x.id === first) || y.top - x.top || x.id.localeCompare(y.id),
+    );
     for (const { id } of ranked) {
       await runMatchForUser(id).catch((err) =>
         console.error(`[match] ${id}:`, err instanceof Error ? err.message : err),
