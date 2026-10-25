@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import AIPanel from "@/components/AIPanel";
 import Avatar from "@/components/Avatar";
 import { CheckBadgeIcon, ChevronLeftIcon, ShieldCheckIcon, StarIcon } from "@/components/Icons";
-import { rebaseTimes } from "@/components/mockTime";
+import type { ApiProposal, Venue } from "@/components/ProposalCard";
 import { useCurrentUser } from "@/components/useSession";
 import users from "@/data/mock/users.json";
-import mock from "@/data/mock/proposal-confirmed.json";
 
 const gradientBtn = "rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-sm font-semibold text-white";
 const outlineBtn = "rounded-lg border border-neutral-300 text-sm font-semibold text-neutral-700";
@@ -20,21 +19,83 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+const Header = () => (
+  <div className="sticky top-0 z-10 flex items-center border-b border-neutral-200 bg-white px-2 py-2">
+    <Link href="/nearby" aria-label="Back" className="p-2">
+      <ChevronLeftIcon />
+    </Link>
+    <h1 className="flex-1 pr-10 text-center text-base font-semibold">Confirmed</h1>
+  </div>
+);
+
+// "loading" until the first poll lands, then the latest proposal (null = none).
+type Loaded = { proposal: ApiProposal | null } | "loading";
+
 export default function ConfirmedPage() {
   const user = useCurrentUser();
-  const [proposal] = useState(() => rebaseTimes(mock.proposal, mock.proposal.server_now));
+  const userId = user?.id;
+  const [data, setData] = useState<Loaded>("loading");
+
+  // Poll GET /api/proposal until the plan is confirmed (it stays visible while the user is on).
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      let done = false;
+      try {
+        const res = await fetch(`/api/proposal?user_id=${encodeURIComponent(userId)}`, { cache: "no-store" });
+        const body = await res.json().catch(() => null);
+        if (!cancelled && res.ok && body) {
+          setData({ proposal: body.proposal ?? null });
+          done = body.proposal?.state === "confirmed" || !body.proposal;
+        }
+      } catch {
+        // retry on the next tick
+      }
+      if (!cancelled && !done) timer = setTimeout(poll, 1500);
+    };
+    poll();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [userId]);
+
   if (!user) return null;
+
+  const proposal = data === "loading" ? null : data.proposal;
+  if (!proposal || proposal.state !== "confirmed" || !proposal.venue) {
+    const planning = proposal?.state === "both_accepted";
+    return (
+      <div>
+        <Header />
+        <div className="px-4 pt-16 text-center">
+          <p className="font-semibold">
+            {data === "loading" ? "Loading..." : planning ? "Finding a spot..." : "No confirmed plan yet"}
+          </p>
+          <p className="mt-1 text-sm text-neutral-500">
+            {planning
+              ? "You both said yes. Picking a public place."
+              : data === "loading"
+                ? ""
+                : "Turn on Meet nearby and accept a match to get a plan."}
+          </p>
+          {data !== "loading" && !planning && (
+            <Link href="/nearby" className="mt-4 inline-block text-sm font-semibold text-pink-600">
+              Back to Meet nearby
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const { other, venue, plan_reason, icebreakers } = proposal;
 
   return (
     <div className="pb-8">
-      <div className="sticky top-0 z-10 flex items-center border-b border-neutral-200 bg-white px-2 py-2">
-        <Link href="/nearby" aria-label="Back" className="p-2">
-          <ChevronLeftIcon />
-        </Link>
-        <h1 className="flex-1 pr-10 text-center text-base font-semibold">Confirmed</h1>
-      </div>
+      <Header />
 
       <div className="px-4">
         <div className="flex flex-col items-center pt-6">
@@ -60,7 +121,7 @@ export default function ConfirmedPage() {
 
         <section className={card}>
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Why this spot</p>
-          <p className="mt-1 text-sm text-neutral-800">{plan_reason}</p>
+          <p className="mt-1 text-sm text-neutral-800">{plan_reason ?? ""}</p>
         </section>
 
         <IcebreakerCard options={icebreakers} />
@@ -68,14 +129,14 @@ export default function ConfirmedPage() {
         <FeedbackButton />
 
         <div className="mt-6">
-          <AIPanel proposal={proposal} />
+          <AIPanel proposal={{ why: proposal.why, shared_tags: proposal.shared_tags, tool_calls: proposal.tool_calls }} />
         </div>
       </div>
     </div>
   );
 }
 
-function VenueCard({ venue }: { venue: typeof mock.proposal.venue }) {
+function VenueCard({ venue }: { venue: Venue }) {
   return (
     <section className="mt-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
       <MiniMap />

@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import SubHeader from "@/components/SubHeader";
 import { XIcon } from "@/components/Icons";
 import { useCurrentUser } from "@/components/useSession";
 import { MAX_TAGS, SUGGESTED_TAGS, loadInterests, saveInterests } from "@/components/nearbyPrefs";
 
 function Editor({ userId }: { userId: string }) {
-  const router = useRouter();
   const [tags, setTags] = useState<string[]>(() => loadInterests(userId));
   const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [adjacent, setAdjacent] = useState<string[]>([]);
   const full = tags.length >= MAX_TAGS;
 
   const add = (raw: string) => {
@@ -22,14 +23,43 @@ function Editor({ userId }: { userId: string }) {
     add(draft);
     setDraft("");
   };
-  const save = () => {
-    saveInterests(userId, tags);
-    router.back();
+  // PUT /api/interests: the chips go up as free text; the extracted tags that come back become the chips.
+  const save = async () => {
+    if (saving) return;
+    if (tags.length === 0) {
+      setError("Add at least one interest first.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/interests", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, text: tags.join(", ") }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !Array.isArray(body?.tags)) throw new Error(body?.error ?? `Request failed (${res.status})`);
+      const saved: string[] = (body.tags as { tag: string }[]).map((t) => t.tag).slice(0, MAX_TAGS);
+      saveInterests(userId, saved);
+      setTags(saved);
+      setAdjacent(Array.isArray(body.adjacent_tags) ? body.adjacent_tags : []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't save. Try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <>
-      <SubHeader title="Interests" onSave={save} />
+      <SubHeader title="Interests" onSave={save} canSave={!saving} />
+      {saving && <p className="px-4 pt-3 text-sm text-neutral-500">Finding your tags...</p>}
+      {error && (
+        <p role="alert" className="mx-4 mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {error}
+        </p>
+      )}
       <div className="px-4 py-6">
         <p className="text-sm text-neutral-500">Add up to {MAX_TAGS} things you&apos;re into. We use them to find people who share them.</p>
 
@@ -77,6 +107,12 @@ function Editor({ userId }: { userId: string }) {
             Add
           </button>
         </form>
+
+        {adjacent.length > 0 && (
+          <p className="mt-4 text-sm text-neutral-500">
+            Saved. We&apos;ll also look for people into: {adjacent.join(", ")}.
+          </p>
+        )}
 
         <p className="mt-6 text-sm font-semibold">Suggested</p>
         <div className="mt-2 flex flex-wrap gap-2">

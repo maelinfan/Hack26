@@ -68,14 +68,45 @@ function Editor({ userId }: { userId: string }) {
   const set = (patch: Partial<Filters>) => setF((p) => ({ ...p, ...patch }));
 
   const valid = f.genders.length > 0 && f.follow_statuses.length > 0 && f.radius_mi !== null;
-  const save = () => {
-    saveFilters(userId, f);
-    router.back();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // PUT /api/filters with the SPEC field names; localStorage is only a cache for prefilling the form.
+  const save = async () => {
+    if (saving || !valid) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/filters", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          age_min: f.age_min,
+          age_max: f.age_max,
+          genders: f.genders,
+          follow_statuses: f.follow_statuses,
+          radius_mi: f.radius_mi,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.ok) throw new Error(body?.error ?? `Request failed (${res.status})`);
+      saveFilters(userId, f);
+      router.back();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't save. Try again.");
+      setSaving(false);
+    }
   };
 
   return (
     <>
-      <SubHeader title="Filters" onSave={save} canSave={valid} />
+      <SubHeader title="Filters" onSave={save} canSave={valid && !saving} />
+      {saving && <p className="px-4 pt-3 text-sm text-neutral-500">Saving...</p>}
+      {error && (
+        <p role="alert" className="mx-4 mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {error}
+        </p>
+      )}
       <div className="px-4 py-6">
         <div className="flex items-baseline justify-between">
           <p className="text-sm font-semibold">Age range</p>

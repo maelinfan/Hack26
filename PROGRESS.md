@@ -25,10 +25,18 @@
 - Backend call budget (Person 1): every paid model call goes through callModel in /lib/ai.ts; hard cap MODEL_MAX_CALLS (default 300), count stored in DB, shown at /api/sim/status
 - Backend Phase 7 (Person 1): venue agent (/lib/planner.ts, /lib/venues.ts). After both accept, Muse Spark calls get_nearby_venues -> get_open_hours -> propose_plan (code enforces open >= 90 min); result saved, proposal -> confirmed in ~10-15s. Falls back to a code planner (same tool steps) if the model fails. Verified with the real model in daytime. At night few venues are open: set PLAN_NOW=<ISO time> in .env.local to simulate daytime for filming
 - Backend Phase 8 (Person 1), parts 1-2: removed temporary /api/health; added GET /api/sim/status (db check, AI calls used/cap, PLAN_NOW); fixed `npm run build` without keys (lazy db client; connection() on /api/users); POST /api/sim/warm pre-fills the AI cache for the demo cast (20 cases, ~15 paid calls once). After warm-up the first Maya+Jordan proposal appears in ~2s with 0 paid calls. Re-run warm after changing personas or the AI prompt
+- UI wired to the real API (Person 2), steps 1-6:
+  - Interests: Save -> PUT /api/interests (chips joined as text); returned tags become the chips, cached in localStorage `interests:<id>` (AIPanel reads it); loading + error states
+  - Filters: Save -> PUT /api/filters with SPEC field names; localStorage `filters:<id>` kept only as the prefill cache (no GET endpoint)
+  - Presence: toggle -> POST /api/presence (pin from `sim:pins`, else personas.json default) / DELETE; countdown from `available_until`; window remembered per tab in sessionStorage `presence:<id>` (no GET for presence); fake 4s timer removed
+  - Proposal polling: GET /api/proposal every 1.5s while on; ProposalCard renders the real response, ring rebased on `server_now`; "Searching..." when null; one-time notice for `last_outcome`; follows `searching:false` by switching the toggle off; fake rematch list deleted
+  - Respond: Accept / Not now / Not interested -> POST /api/proposal/:id/respond, then immediate re-poll; 409 just re-polls; "Waiting for them..." from `my_response`
+  - Confirmed: `both_accepted` shows "Finding a spot..." (and says so if it takes over 45s); on pending/both_accepted -> confirmed the page navigates to /nearby/confirmed, which renders the real proposal (venue, plan_reason, tool_calls, icebreakers). Landing on /nearby with an already-confirmed plan shows a "View plan" link instead of redirecting. "Preview confirmed screen" link and components/mockTime.ts removed
+  - At night the venue agent finds nothing open: set PLAN_NOW=2026-10-25T18:00:00Z in .env.local and restart `npm run dev`
 ## In progress
 - Backend Phase 8 part 3: full dry run with Person 2 (two windows via /sim)
 ## Next (Person 2)
-1. Wire UI to real API once Phase 5/6 exist (poll /api/proposal, respond, interests, filters, presence); remove "Preview confirmed screen" link
+1. Full two-tab dry run (reset, Maya + Jordan, decline -> Priya, accept both, confirmed), then record the demo video
 ## Notes / decisions
 - Node installed via winget; a terminal opened before install needs a restart to see `node`.
 - Login always signs in as Maya. Other personas (e.g. Jordan) are opened from /sim ("Open as" opens a new tab signed in as them). Interests/filters stay in localStorage keyed by user_id, so they are shared between tabs for the same user.

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Avatar from "@/components/Avatar";
-import ProposalCard from "@/components/ProposalCard";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import ProposalCard, { type ApiProposal } from "@/components/ProposalCard";
+import personas from "@/data/personas.json";
 import { ChevronRightIcon, NearbyIcon, ShieldCheckIcon, SlidersIcon, TagIcon } from "@/components/Icons";
 import { useCurrentUser } from "@/components/useSession";
 
@@ -13,7 +15,37 @@ const DURATIONS = [
   { minutes: 120, label: "2 hrs" },
 ];
 
-const PROPOSAL_DELAY_MS = 4000;
+// Where this user's pin is: the /sim pin if they dragged one, else the persona's default position.
+function pinFor(userId: string) {
+  try {
+    const raw = localStorage.getItem("sim:pins");
+    const p = raw ? JSON.parse(raw)?.[userId] : null;
+    if (typeof p?.lat === "number" && typeof p?.lng === "number") return { lat: p.lat as number, lng: p.lng as number };
+  } catch {
+    // fall through to the default
+  }
+  const d = personas.presence.find((x) => x.user_id === userId);
+  return { lat: d?.lat ?? 30.2849, lng: d?.lng ?? -97.7341 };
+}
+
+// The server has no "am I on?" read, so remember the window per tab to survive leaving this page.
+const untilKey = (userId: string) => `presence:${userId}`;
+const readUntil = (userId: string) => {
+  try {
+    const t = Date.parse(sessionStorage.getItem(untilKey(userId)) ?? "");
+    return Number.isFinite(t) && t > Date.now() ? t : null;
+  } catch {
+    return null;
+  }
+};
+const writeUntil = (userId: string, iso: string | null) => {
+  try {
+    if (iso) sessionStorage.setItem(untilKey(userId), iso);
+    else sessionStorage.removeItem(untilKey(userId));
+  } catch {
+    // storage unavailable: ignore
+  }
+};
 
 function formatRemaining(ms: number) {
   const total = Math.ceil(ms / 1000);
@@ -27,11 +59,46 @@ function formatRemaining(ms: number) {
 export default function NearbyPage() {
   const user = useCurrentUser();
   const [minutes, setMinutes] = useState(120);
-  // Fake state: epoch ms when availability ends, null = off.
+  // Epoch ms of the server's available_until, null = off.
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(0);
-  const [showProposal, setShowProposal] = useState(false);
-  const [proposalKey, setProposalKey] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState<{ proposal: ApiProposal; skewMs: number } | null>(null);
+  const [notice, setNotice] = useState<"expired" | "declined" | null>(null);
+  const [responding, setResponding] = useState(false);
+  const pollRef = useRef<(() => Promise<void>) | null>(null);
+  const lastSeen = useRef<{ id: string; state: string } | null>(null);
+  const router = useRouter();
+  const userId = user?.id;
+
+  // POST /api/proposal/:id/respond, then re-poll right away. A 409 just means it already ended: re-poll.
+  const respond = async (proposalId: string, response: "accept" | "decline", reason?: "not_now" | "not_interested") => {
+    if (responding || !userId) return;
+    setResponding(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/proposal/${proposalId}/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, response, ...(response === "decline" ? { reason } : {}) }),
+      });
+      if (!res.ok && res.status !== 409) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? `Request failed (${res.status})`);
+      }
+      await pollRef.current?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't send your answer. Try again.");
+    } finally {
+      setResponding(false);
+    }
+  };
+
+  // Coming back to this page: restore the window we remembered for this tab.
+  useEffect(() => {
+    if (userId) setEndsAt(readUntil(userId));
+  }, [userId]);
 
   useEffect(() => {
     if (endsAt === null) return;
@@ -41,32 +108,105 @@ export default function NearbyPage() {
     return () => clearInterval(id);
   }, [endsAt]);
 
-  // Fake matching: a proposal appears a few seconds after turning on.
-  const on0 = endsAt !== null;
+  const remaining = endsAt === null ? 0 : Math.max(0, endsAt - now);
+  const on = endsAt !== null && remaining > 0;
+
+  // While on, poll GET /api/proposal every 1.5s. Stops on toggle off / unmount.
   useEffect(() => {
-    if (!on0) {
-      setShowProposal(false);
+    if (!on || !userId) {
+      setLive(null);
+      setNotice(null);
       return;
     }
-    const id = setTimeout(() => {
-      setProposalKey((k) => k + 1);
-      setShowProposal(true);
-    }, PROPOSAL_DELAY_MS);
-    return () => clearTimeout(id);
-  }, [on0, endsAt]);
+    let cancelled = false;
+    let inFlight = false;
+    const poll = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const res = await fetch(`/api/proposal?user_id=${encodeURIComponent(userId)}`, { cache: "no-store" });
+        const body = await res.json().catch(() => null);
+        if (cancelled || !res.ok || !body) return;
+        if (body.proposal) {
+          setNotice(null);
+          setLive({ proposal: body.proposal, skewMs: Date.parse(body.proposal.server_now) - Date.now() });
+          // Go to the confirmed screen when a proposal we were watching becomes confirmed. (Landing here with
+          // an already-confirmed one doesn't redirect, so Back from /nearby/confirmed isn't a trap.)
+          const prev = lastSeen.current;
+          if (prev && prev.id === body.proposal.id && prev.state !== "confirmed" && body.proposal.state === "confirmed") {
+            router.push("/nearby/confirmed");
+          }
+          lastSeen.current = { id: body.proposal.id, state: body.proposal.state };
+        } else {
+          lastSeen.current = null;
+          setLive(null);
+          if (body.last_outcome) setNotice(body.last_outcome); // arrives once
+          // The server says we're not on (e.g. after a sim reset): follow it.
+          if (body.searching === false) {
+            writeUntil(userId, null);
+            setEndsAt(null);
+          }
+        }
+      } catch {
+        // network blip: the next tick retries
+      } finally {
+        inFlight = false;
+      }
+    };
+    pollRef.current = poll;
+    poll();
+    const id = setInterval(poll, 1500);
+    return () => {
+      cancelled = true;
+      pollRef.current = null;
+      clearInterval(id);
+    };
+  }, [on, userId, router]);
 
   if (!user) return null;
 
-  const remaining = endsAt === null ? 0 : Math.max(0, endsAt - now);
-  const on = endsAt !== null && remaining > 0;
   const durationLabel = DURATIONS.find((d) => d.minutes === minutes)!.label;
 
-  const turnOn = (mins: number) => {
-    const start = Date.now();
-    setNow(start);
-    setEndsAt(start + mins * 60_000);
+  // POST /api/presence turns it on (or restarts the window); the countdown follows available_until.
+  const turnOn = async (mins: number) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id, ...pinFor(user.id), minutes: mins }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.active || !body.available_until) throw new Error(body?.error ?? `Request failed (${res.status})`);
+      writeUntil(user.id, body.available_until);
+      setNow(Date.now());
+      setEndsAt(Date.parse(body.available_until));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't turn on Meet nearby. Try again.");
+    } finally {
+      setBusy(false);
+    }
   };
-  const toggle = () => (on ? setEndsAt(null) : turnOn(minutes));
+  // DELETE /api/presence?user_id= turns it off.
+  const turnOff = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/presence?user_id=${encodeURIComponent(user.id)}`, { method: "DELETE" });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.ok) throw new Error(body?.error ?? `Request failed (${res.status})`);
+      writeUntil(user.id, null);
+      setEndsAt(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't turn off Meet nearby. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const toggle = () => (on ? turnOff() : turnOn(minutes));
   const pickDuration = (mins: number) => {
     setMinutes(mins);
     if (on) turnOn(mins);
@@ -107,6 +247,7 @@ export default function NearbyPage() {
           aria-checked={on}
           aria-label="Meet nearby"
           onClick={toggle}
+          disabled={busy}
           className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${
             on ? "bg-gradient-to-r from-pink-500 to-purple-600" : "bg-neutral-300"
           }`}
@@ -132,9 +273,42 @@ export default function NearbyPage() {
         </Link>
       </div>
 
-      {showProposal && (
+      {error && (
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {error}
+        </p>
+      )}
+
+      {on && notice && !live && (
+        <p className="mt-4 rounded-lg bg-neutral-50 px-3 py-2 text-center text-sm text-neutral-600">
+          {notice === "expired" ? "That suggestion expired." : "That suggestion didn't go through."} Looking for someone
+          else...
+        </p>
+      )}
+      {on && live && live.proposal.state === "confirmed" && (
+        <Link
+          href="/nearby/confirmed"
+          className="mt-6 block rounded-2xl border border-neutral-200 bg-white p-4 text-center shadow-sm"
+        >
+          <p className="font-semibold">Your plan with {live.proposal.other.name} is confirmed</p>
+          <p className="mt-1 text-sm font-semibold text-pink-600">View plan</p>
+        </Link>
+      )}
+      {on && live && live.proposal.state !== "confirmed" && (
         <div className="mt-6">
-          <ProposalCard key={proposalKey} excludeId={user.id} />
+          <ProposalCard
+            key={live.proposal.id}
+            proposal={live.proposal}
+            skewMs={live.skewMs}
+            busy={responding}
+            onRespond={(r, reason) => respond(live.proposal.id, r, reason)}
+          />
+        </div>
+      )}
+      {on && !live && (
+        <div className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 py-6 text-sm text-neutral-500">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-pink-500" />
+          Searching for someone nearby...
         </div>
       )}
 
@@ -164,10 +338,6 @@ export default function NearbyPage() {
         </p>
       </div>
 
-      {/* Temporary: remove when the real flow is wired. */}
-      <Link href="/nearby/confirmed" className="mt-6 block text-center text-xs text-neutral-400 underline">
-        Preview confirmed screen
-      </Link>
     </div>
   );
 }
