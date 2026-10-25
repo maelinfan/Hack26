@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AIPanel from "@/components/AIPanel";
 import Avatar from "@/components/Avatar";
 import { CheckBadgeIcon } from "@/components/Icons";
 import mock from "@/data/mock/proposal-pending.json";
@@ -21,7 +22,7 @@ const asOther = (id: string, relationship: string, distance: string) => {
 
 // Fake queue of suggestions; Jordan comes from the mock proposal file.
 const CANDIDATES: Candidate[] = [
-  { id: "jordan", other: mock.proposal.other, why: mock.proposal.why, shared_tags: mock.proposal.shared_tags, icebreaker: mock.proposal.icebreaker },
+  { id: "jordan", other: mock.proposal.other, why: mock.proposal.why, shared_tags: mock.proposal.shared_tags, icebreaker: mock.proposal.icebreakers[0] },
   { id: "priya", other: asOther("priya", "follows_you", "nearby"), why: "You both love sketching and ramen. Priya posts her café drawings every weekend.", shared_tags: ["sketching", "ramen"], icebreaker: "What are you drawing lately?" },
   { id: "sam", other: asOther("sam", "none", "very_close"), why: "You both play board games and love coffee. Sam hosts game nights near campus.", shared_tags: ["board games", "coffee"], icebreaker: "What's your all-time favorite board game?" },
   { id: "riley", other: asOther("riley", "following", "nearby"), why: "You both love hiking and birdwatching. Riley spotted a rare warbler last week.", shared_tags: ["hiking", "birding"], icebreaker: "What's the best trail you've done lately?" },
@@ -54,7 +55,13 @@ export default function ProposalCard({ excludeId }: { excludeId?: string }) {
   const queue = CANDIDATES.filter((c) => c.id !== excludeId);
   const [i, setI] = useState(0);
   const c = queue[i % queue.length];
-  return <Card key={`${c.id}-${i}`} candidate={c} onNext={() => setI((n) => n + 1)} />;
+  return (
+    <div className="space-y-3">
+      <Card key={`${c.id}-${i}`} candidate={c} onNext={() => setI((n) => n + 1)} />
+      {/* Sections 1-2 only: the venue agent hasn't run yet (tool_calls null). */}
+      <AIPanel key={`panel-${c.id}-${i}`} proposal={{ why: c.why, shared_tags: c.shared_tags, tool_calls: null }} />
+    </div>
+  );
 }
 
 function Card({ candidate, onNext }: { candidate: Candidate; onNext: () => void }) {

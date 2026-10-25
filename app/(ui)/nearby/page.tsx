@@ -163,6 +163,11 @@ export default function NearbyPage() {
           be matched with verified adults, and every meetup happens at a public venue.
         </p>
       </div>
+
+      {/* Temporary: remove when the real flow is wired. */}
+      <Link href="/nearby/confirmed" className="mt-6 block text-center text-xs text-neutral-400 underline">
+        Preview confirmed screen
+      </Link>
     </div>
   );
 }

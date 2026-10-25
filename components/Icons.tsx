@@ -78,3 +78,22 @@ export const NearbyIcon =({ className, filled }: P) => (
     <circle cx="12" cy="9.5" r="2.5" fill={filled ? "#fff" : "none"} />
   </svg>
 );
+
+export const ChevronDownIcon = ({ className }: P) => (
+  <svg {...base} width={20} height={20} className={className}>
+    <path d="m5 9 7 7 7-7" />
+  </svg>
+);
+
+export const CopyIcon = ({ className }: P) => (
+  <svg {...base} width={16} height={16} className={className}>
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M5 15V6a2 2 0 0 1 2-2h8" />
+  </svg>
+);
+
+export const StarIcon = ({ className, filled }: P) => (
+  <svg {...base} width={30} height={30} className={className} fill={filled ? "currentColor" : "none"}>
+    <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
+  </svg>
+);

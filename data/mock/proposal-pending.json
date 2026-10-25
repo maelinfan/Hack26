@@ -13,7 +13,11 @@
     },
     "why": "You both climb and love coffee. Jordan has been bouldering for a few years too.",
     "shared_tags": ["bouldering", "coffee"],
-    "icebreaker": "What's the hardest V-grade you've sent?",
+    "icebreakers": [
+      "What's the hardest V-grade you've sent?",
+      "How did you first get into bouldering?",
+      "What's your go-to coffee order after a session?"
+    ],
     "my_response": null,
     "other_responded": false,
     "expires_at": "2026-10-24T23:41:45Z",
