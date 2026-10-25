@@ -3,10 +3,10 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import type { Tag } from "@/lib/types";
 
-// All model calls go through here (SPEC §7): JSON only, validated with zod, 8s timeout,
+// All model calls go through here (SPEC §7): JSON only, validated with zod, 10s timeout,
 // cached by hash of the input, and a fallback if the model is unavailable.
 
-const TIMEOUT_MS = 10000;
+const TIMEOUT_MS = 25000;
 
 // ---- cache (ai_cache table) ------------------------------------------------
 
