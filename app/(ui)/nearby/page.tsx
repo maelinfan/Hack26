@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Avatar from "@/components/Avatar";
+import ProposalCard from "@/components/ProposalCard";
 import { NearbyIcon, ShieldCheckIcon } from "@/components/Icons";
 import { useCurrentUser } from "@/components/useSession";
 
@@ -10,6 +11,8 @@ const DURATIONS = [
   { minutes: 60, label: "1 hr" },
   { minutes: 120, label: "2 hrs" },
 ];
+
+const PROPOSAL_DELAY_MS = 4000;
 
 function formatRemaining(ms: number) {
   const total = Math.ceil(ms / 1000);
@@ -26,6 +29,8 @@ export default function NearbyPage() {
   // Fake state: epoch ms when availability ends, null = off.
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState(0);
+  const [showProposal, setShowProposal] = useState(false);
+  const [proposalKey, setProposalKey] = useState(0);
 
   useEffect(() => {
     if (endsAt === null) return;
@@ -34,6 +39,20 @@ export default function NearbyPage() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [endsAt]);
+
+  // Fake matching: a proposal appears a few seconds after turning on.
+  const on0 = endsAt !== null;
+  useEffect(() => {
+    if (!on0) {
+      setShowProposal(false);
+      return;
+    }
+    const id = setTimeout(() => {
+      setProposalKey((k) => k + 1);
+      setShowProposal(true);
+    }, PROPOSAL_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [on0, endsAt]);
 
   if (!user) return null;
 
@@ -98,6 +117,12 @@ export default function NearbyPage() {
           />
         </button>
       </div>
+
+      {showProposal && (
+        <div className="mt-6">
+          <ProposalCard key={proposalKey} excludeId={user.id} />
+        </div>
+      )}
 
       <p className="mt-6 text-sm font-semibold">Stay open for</p>
       <div className="mt-2 grid grid-cols-3 gap-2">

@@ -23,6 +23,13 @@ export const ShieldCheckIcon = ({ className }: P) => (
   </svg>
 );
 
+export const CheckBadgeIcon = ({ className }: P) => (
+  <svg {...base} width={16} height={16} className={className} fill="currentColor" stroke="none">
+    <path d="M12 2l2.4 1.8 3-.1.9 2.9 2.4 1.8-.9 2.9.9 2.9-2.4 1.8-.9 2.9-3-.1L12 22l-2.4-1.8-3 .1-.9-2.9-2.4-1.8.9-2.9-.9-2.9 2.4-1.8.9-2.9 3 .1z" />
+    <path d="m8.5 12 2.5 2.5 4.5-4.5" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export const NearbyIcon =({ className, filled }: P) => (
   <svg {...base} className={className}>
     <path
