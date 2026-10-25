@@ -97,3 +97,48 @@ export const StarIcon = ({ className, filled }: P) => (
     <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
   </svg>
 );
+
+export const HeartIcon = ({ className, filled }: P) => (
+  <svg {...base} className={className} fill={filled ? "currentColor" : "none"}>
+    <path d="M12 20.5s-8-4.9-8-11A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5c0 6.1-8 11-8 11z" />
+  </svg>
+);
+
+export const CommentIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M20.5 12a8.5 8.5 0 0 1-12.3 7.6L3.5 20.5l1-4.4A8.5 8.5 0 1 1 20.5 12z" />
+  </svg>
+);
+
+export const SendIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M21 3 10 14M21 3l-7 18-4-7-7-4z" />
+  </svg>
+);
+
+export const BookmarkIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M6 3h12v18l-6-4.5L6 21z" />
+  </svg>
+);
+
+export const SearchIcon = ({ className, filled }: P) => (
+  <svg {...base} strokeWidth={filled ? 2.5 : 1.5} className={className}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-4-4" />
+  </svg>
+);
+
+export const ReelsIcon = ({ className, filled }: P) => (
+  <svg {...base} strokeWidth={filled ? 2 : 1.5} className={className}>
+    <rect x="3" y="3" width="18" height="18" rx="4" />
+    <path d="M3 8.5h18M9 3l3 5.5M15 3l3 5.5" />
+    <path d="m10.5 12.5 4 2.5-4 2.5z" fill="currentColor" />
+  </svg>
+);
+
+export const PlusIcon = ({ className }: P) => (
+  <svg {...base} width={14} height={14} strokeWidth={3} className={className}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);

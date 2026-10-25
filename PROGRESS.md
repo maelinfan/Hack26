@@ -33,6 +33,7 @@
   - Respond: Accept / Not now / Not interested -> POST /api/proposal/:id/respond, then immediate re-poll; 409 just re-polls; "Waiting for them..." from `my_response`
   - Confirmed: `both_accepted` shows "Finding a spot..." (and says so if it takes over 45s); on pending/both_accepted -> confirmed the page navigates to /nearby/confirmed, which renders the real proposal (venue, plan_reason, tool_calls, icebreakers). Landing on /nearby with an already-confirmed plan shows a "View plan" link instead of redirecting. "Preview confirmed screen" link and components/mockTime.ts removed
   - At night the venue agent finds nothing open: set PLAN_NOW=2026-10-25T18:00:00Z in .env.local and restart `npm run dev`
+- Instagram shell (Person 2): Home (/) is now a fake Instagram feed: header, stories row (components/Stories.tsx, "Your story" + other personas), posts from data/mock/posts.json (components/PostCard.tsx, local-only like/save, own posts hidden), and a "Meet nearby" promo card (components/NearbyPromo.tsx) after the first post. Bottom nav: Home, Search, Reels, Meet nearby, Profile (avatar). New pages: /search (placeholder grid), /reels (placeholder), /profile (own posts grid + Log out, moved from Home). Post images are picsum.photos (needs internet). "Meetup done?" -> Close returns to Home, marks the plan finished in sessionStorage `finished:<id>` (the server keeps a confirmed proposal visible while on) and turns Meet nearby off
 ## In progress
 - Backend Phase 8 part 3: full dry run with Person 2 (two windows via /sim)
 ## Next (Person 2)

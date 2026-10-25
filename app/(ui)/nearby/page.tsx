@@ -8,6 +8,7 @@ import ProposalCard, { type ApiProposal } from "@/components/ProposalCard";
 import personas from "@/data/personas.json";
 import { ChevronRightIcon, NearbyIcon, ShieldCheckIcon, SlidersIcon, TagIcon } from "@/components/Icons";
 import { useCurrentUser } from "@/components/useSession";
+import { isFinished } from "@/components/nearbyPrefs";
 
 const DURATIONS = [
   { minutes: 30, label: "30 min" },
@@ -127,7 +128,11 @@ export default function NearbyPage() {
         const res = await fetch(`/api/proposal?user_id=${encodeURIComponent(userId)}`, { cache: "no-store" });
         const body = await res.json().catch(() => null);
         if (cancelled || !res.ok || !body) return;
-        if (body.proposal) {
+        if (body.proposal && isFinished(userId, body.proposal.id)) {
+          // A plan the user already marked done: treat it as "no proposal" and keep searching.
+          lastSeen.current = null;
+          setLive(null);
+        } else if (body.proposal) {
           setNotice(null);
           setLive({ proposal: body.proposal, skewMs: Date.parse(body.proposal.server_now) - Date.now() });
           // Go to the confirmed screen when a proposal we were watching becomes confirmed. (Landing here with

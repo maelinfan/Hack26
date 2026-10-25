@@ -54,6 +54,27 @@ function save(key: string, value: unknown) {
   }
 }
 
+// Plans the user marked "Meetup done". The server keeps a confirmed proposal visible while the user is
+// on, so the UI hides finished ones itself. Per tab (sessionStorage), like the session.
+const finishedKey = (userId: string) => `finished:${userId}`;
+export const isFinished = (userId: string, proposalId: string) => {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(finishedKey(userId)) ?? "[]");
+    return Array.isArray(v) && v.includes(proposalId);
+  } catch {
+    return false;
+  }
+};
+export const markFinished = (userId: string, proposalId: string) => {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(finishedKey(userId)) ?? "[]");
+    const list = Array.isArray(v) ? v : [];
+    sessionStorage.setItem(finishedKey(userId), JSON.stringify([...list, proposalId]));
+  } catch {
+    // storage unavailable: ignore
+  }
+};
+
 export const loadInterests = (userId: string) => {
   const v = load<unknown>(`interests:${userId}`, []);
   return Array.isArray(v) ? v.filter((t): t is string => typeof t === "string").slice(0, MAX_TAGS) : [];

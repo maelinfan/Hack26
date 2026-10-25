@@ -1,0 +1,14 @@
+[
+  {"id": "p1", "user_id": "jordan", "image": "https://picsum.photos/seed/boulder-gym/600/600", "caption": "Finally sent the V5 I've been working on all month", "likes": 214, "time": "2h"},
+  {"id": "p2", "user_id": "priya", "image": "https://picsum.photos/seed/cafe-sketch/600/600", "caption": "Sketching at the cafe again. Matcha and a fresh page.", "likes": 98, "time": "3h"},
+  {"id": "p3", "user_id": "sam", "image": "https://picsum.photos/seed/board-games/600/600", "caption": "Game night was chaos. Who wants a rematch?", "likes": 67, "time": "5h"},
+  {"id": "p4", "user_id": "riley", "image": "https://picsum.photos/seed/trail-birds/600/600", "caption": "Dawn hike, three new birds on the list", "likes": 142, "time": "6h"},
+  {"id": "p5", "user_id": "ava", "image": "https://picsum.photos/seed/film-roll/600/600", "caption": "Shot a whole roll at the show last night", "likes": 305, "time": "9h"},
+  {"id": "p6", "user_id": "zoe", "image": "https://picsum.photos/seed/pottery-studio/600/600", "caption": "New mugs out of the kiln", "likes": 121, "time": "11h"},
+  {"id": "p7", "user_id": "marcus", "image": "https://picsum.photos/seed/bookshop/600/600", "caption": "Sunday reading spot", "likes": 54, "time": "13h"},
+  {"id": "p8", "user_id": "luca", "image": "https://picsum.photos/seed/bike-ride/600/600", "caption": "Long ride along the lake", "likes": 88, "time": "1d"},
+  {"id": "p9", "user_id": "devon", "image": "https://picsum.photos/seed/cold-plunge/600/600", "caption": "Cold plunge, day 30", "likes": 76, "time": "1d"},
+  {"id": "p10", "user_id": "maya", "image": "https://picsum.photos/seed/climb-wall/600/600", "caption": "Project wall, round three", "likes": 173, "time": "2d"},
+  {"id": "p11", "user_id": "maya", "image": "https://picsum.photos/seed/ramen-bowl/600/600", "caption": "Post-climb ramen is undefeated", "likes": 129, "time": "4d"},
+  {"id": "p12", "user_id": "jordan", "image": "https://picsum.photos/seed/film-camera/600/600", "caption": "Film camera, first roll back", "likes": 96, "time": "5d"}
+]

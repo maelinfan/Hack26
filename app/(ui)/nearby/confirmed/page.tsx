@@ -2,10 +2,12 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AIPanel from "@/components/AIPanel";
 import Avatar from "@/components/Avatar";
 import { CheckBadgeIcon, ChevronLeftIcon, ShieldCheckIcon, StarIcon } from "@/components/Icons";
 import type { ApiProposal, Venue } from "@/components/ProposalCard";
+import { markFinished } from "@/components/nearbyPrefs";
 import { useCurrentUser } from "@/components/useSession";
 import users from "@/data/mock/users.json";
 
@@ -126,7 +128,7 @@ export default function ConfirmedPage() {
 
         <IcebreakerCard options={icebreakers} />
         <SafetySection otherName={other.name} venueName={venue.name} excludeIds={[user.id, users.find((u) => u.handle === other.handle)?.id ?? ""]} />
-        <FeedbackButton />
+        <FeedbackButton userId={user.id} proposalId={proposal.id} />
 
         <div className="mt-6">
           <AIPanel proposal={{ why: proposal.why, shared_tags: proposal.shared_tags, tool_calls: proposal.tool_calls }} />
@@ -366,12 +368,26 @@ function SafetySection({ otherName, venueName, excludeIds }: { otherName: string
   );
 }
 
-function FeedbackButton() {
+function FeedbackButton({ userId, proposalId }: { userId: string; proposalId: string }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [met, setMet] = useState<boolean | null>(null);
   const [rating, setRating] = useState(0);
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
+
+  // Meetup over: turn Meet nearby off (DELETE /api/presence), remember this plan as finished so the
+  // server's still-"confirmed" proposal isn't shown again, and go back to the home screen.
+  const finish = () => {
+    markFinished(userId, proposalId);
+    try {
+      sessionStorage.removeItem(`presence:${userId}`);
+    } catch {
+      // storage unavailable: ignore
+    }
+    fetch(`/api/presence?user_id=${encodeURIComponent(userId)}`, { method: "DELETE" }).catch(() => {});
+    router.replace("/");
+  };
 
   return (
     <>
@@ -379,11 +395,11 @@ function FeedbackButton() {
         Meetup done?
       </button>
       {open && (
-        <Sheet onClose={() => setOpen(false)} title={submitted ? "Thank you!" : "How did it go?"}>
+        <Sheet onClose={submitted ? finish : () => setOpen(false)} title={submitted ? "Thank you!" : "How did it go?"}>
           {submitted ? (
             <>
               <p className="mt-2 text-sm text-neutral-600">Your feedback helps us make future meetups better and safer.</p>
-              <button onClick={() => setOpen(false)} className={`mt-4 w-full py-2.5 ${gradientBtn}`}>
+              <button onClick={finish} className={`mt-4 w-full py-2.5 ${gradientBtn}`}>
                 Close
               </button>
             </>
