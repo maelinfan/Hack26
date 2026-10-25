@@ -120,6 +120,19 @@
       ],
       "adjacent_tags": ["painting", "art museums", "matcha"],
       "verified": true, "avatar_url": "https://i.pravatar.cc/150?img=9"
+    },
+    {
+      "id": "maelin", "name": "Maelin", "handle": "maelinfan", "age": 18, "gender": "woman",
+      "bio": "UT math-physics '29",
+      "interests_raw": "I like doing crosswords, I love south asian food, I'm really into fashion, and I love long walks on the beach",
+      "tags": [
+        {"tag": "crosswords", "category": "game", "weight": 0.8},
+        {"tag": "south asian food", "category": "food", "weight": 0.8},
+        {"tag": "fashion", "category": "lifestyle", "weight": 0.8},
+        {"tag": "walking", "category": "wellness", "weight": 0.6}
+      ],
+      "adjacent_tags": ["coffee", "thrifting", "museums", "hiking", "film photography"],
+      "verified": true, "avatar_url": "/avatars/maelin.jpg"
     }
   ],
   "follows": [
@@ -135,19 +148,33 @@
     {"follower_id": "devon", "followee_id": "luca", "close_friend": false},
     {"follower_id": "maya", "followee_id": "ava", "close_friend": false},
     {"follower_id": "jordan", "followee_id": "ava", "close_friend": false},
-    {"follower_id": "priya", "followee_id": "ava", "close_friend": false}
+    {"follower_id": "priya", "followee_id": "ava", "close_friend": false},
+    {"follower_id": "maya", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "jordan", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "sam", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "riley", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "devon", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "priya", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "ava", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "marcus", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "luca", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "zoe", "followee_id": "maelin", "close_friend": false},
+    {"follower_id": "maelin", "followee_id": "jordan", "close_friend": false},
+    {"follower_id": "maelin", "followee_id": "priya", "close_friend": false},
+    {"follower_id": "maelin", "followee_id": "ava", "close_friend": false}
   ],
   "filters": [
-    {"user_id": "maya", "age_min": 21, "age_max": 30, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},
-    {"user_id": "jordan", "age_min": 21, "age_max": 32, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},
-    {"user_id": "sam", "age_min": 21, "age_max": 32, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
-    {"user_id": "riley", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
-    {"user_id": "devon", "age_min": 25, "age_max": 40, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
-    {"user_id": "priya", "age_min": 20, "age_max": 30, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},
-    {"user_id": "ava", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
-    {"user_id": "marcus", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
-    {"user_id": "luca", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
-    {"user_id": "zoe", "age_min": 21, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1}
+    {"user_id": "maya", "age_min": 18, "age_max": 30, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},
+    {"user_id": "jordan", "age_min": 18, "age_max": 32, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},
+    {"user_id": "sam", "age_min": 18, "age_max": 32, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "riley", "age_min": 18, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "devon", "age_min": 18, "age_max": 40, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "priya", "age_min": 18, "age_max": 30, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},
+    {"user_id": "ava", "age_min": 18, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "marcus", "age_min": 18, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "luca", "age_min": 18, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "zoe", "age_min": 18, "age_max": 35, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["anyone"], "radius_mi": 1},
+    {"user_id": "maelin", "age_min": 18, "age_max": 30, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1}
   ],
   "presence": [
     {"user_id": "maya", "lat": 30.2849, "lng": -97.7341, "available_until": null, "active": false},
@@ -159,6 +186,7 @@
     {"user_id": "ava", "lat": 30.2650, "lng": -97.7320, "available_until": null, "active": false},
     {"user_id": "marcus", "lat": 30.2630, "lng": -97.7330, "available_until": null, "active": false},
     {"user_id": "zoe", "lat": 30.2645, "lng": -97.7310, "available_until": null, "active": false},
-    {"user_id": "luca", "lat": 30.3900, "lng": -97.7200, "available_until": null, "active": false}
+    {"user_id": "luca", "lat": 30.3900, "lng": -97.7200, "available_until": null, "active": false},
+    {"user_id": "maelin", "lat": 30.2878, "lng": -97.7388, "available_until": null, "active": false}
   ]
 }
