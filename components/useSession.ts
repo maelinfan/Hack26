@@ -5,16 +5,13 @@ import users from "@/data/mock/users.json";
 
 const KEY = "user_id";
 
+// sessionStorage (per tab) so two windows can be signed in as different users (Maya + Jordan demo).
 function subscribe(cb: () => void) {
-  window.addEventListener("storage", cb);
   window.addEventListener("session-change", cb);
-  return () => {
-    window.removeEventListener("storage", cb);
-    window.removeEventListener("session-change", cb);
-  };
+  return () => window.removeEventListener("session-change", cb);
 }
 
-const read = () => localStorage.getItem(KEY);
+const read = () => sessionStorage.getItem(KEY);
 // Server render and first hydration pass: unknown yet.
 const readServer = () => undefined;
 
@@ -31,11 +28,11 @@ export function useCurrentUser() {
 }
 
 export function signIn(id: string) {
-  localStorage.setItem(KEY, id);
+  sessionStorage.setItem(KEY, id);
   window.dispatchEvent(new Event("session-change"));
 }
 
 export function signOut() {
-  localStorage.removeItem(KEY);
+  sessionStorage.removeItem(KEY);
   window.dispatchEvent(new Event("session-change"));
 }

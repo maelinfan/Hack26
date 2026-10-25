@@ -20,13 +20,17 @@
 - Backend Phase 4 (Person 1): /lib/ai.ts extractTags (cache -> model -> keyword fallback, zod-validated, 8s timeout), PUT /api/interests (saves tags on the user), /api/sim/reset seeds ai_cache for the demo personas. Real model call untested until MODEL_API_KEY is set
 - Backend Phase 5 (Person 1): matching (/lib/matching.ts: hard filters, score, top 3), rerankCandidates (model, template fallback, cached), GET /api/proposal (mirrored view, no coordinates/answer leaks, last_outcome once, lazy expiry + rematch). POST /api/presence now starts a search after responding. Real Muse Spark calls verified. Try it: Maya + Jordan + Priya online -> Maya/Jordan proposal; let it expire -> Maya gets Priya
 - Backend Phase 6 (Person 1): POST /api/proposal/:id/respond (accept/decline, 403/404/409, first answer counts, race-safe), decline -> decliner searches first, cooldown + permanent not_interested, DELETE presence and out-of-range pin drag end a pending proposal. 27 e2e checks pass. both_accepted has no venue yet (Phase 7)
+=======
+- /sim (app/sim/page.tsx, desktop control panel outside the (ui) layout): map with draggable avatar pins (start positions from personas.json presence), Campus/Wide view toggle, selected user's 1 mi radius circle, venue dots, user list with distance from the selected user and "Open as" links, Reset button. Pins saved in localStorage `sim:pins`; on drag end it POSTs /api/presence {user_id, lat, lng} and Reset POSTs /api/sim/reset (both fire-and-forget, errors ignored until the backend has them)
+- Session moved from localStorage to sessionStorage (per tab) so two windows can be different users; AuthGate signs the tab in from `/?as=<id>` (what "Open as" links use) and cleans the URL
 ## In progress
 - Backend Phase 7: venue agent (planMeetup) -> both_accepted becomes confirmed
 ## Next (Person 2)
-1. /sim page with draggable pins and "open as" buttons (needed for the Jordan window)
+1. Wire UI to real API once Phase 5/6 exist (poll /api/proposal, respond, interests, filters, presence); remove "Preview confirmed screen" link
 ## Notes / decisions
 - Node installed via winget; a terminal opened before install needs a restart to see `node`.
-- Login always signs in as Maya. Other personas (e.g. Jordan) will be opened from /sim.
+- Login always signs in as Maya. Other personas (e.g. Jordan) are opened from /sim ("Open as" opens a new tab signed in as them). Interests/filters stay in localStorage keyed by user_id, so they are shared between tabs for the same user.
+- `npm install` is needed after pulling (Person 1 added @supabase/supabase-js). `npm run build` fails at "collect page data" on /api/health without `.env.local` (Supabase keys); type check itself passes.
 - Mock proposal timestamps are fixed; the UI must rewrite `expires_at`/`server_now` relative to now for the countdown.
 - Edits outside Person 2 folders: deleted starter app/page.tsx; app/layout.tsx title; app/globals.css (removed dark mode, Geist font).
 - AGENTS.md was added by create-next-app (delete if unwanted).
