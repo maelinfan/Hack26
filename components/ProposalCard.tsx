@@ -38,6 +38,11 @@ export type ApiProposal = {
   venue: Venue | null;
   plan_reason: string | null;
   tool_calls: ToolCall[] | null;
+  // Added by the live-features backend (SPEC §6). Optional so older responses still type-check.
+  mutual_connections?: string[];
+  walking?: { you_minutes: number | null; other_minutes: number | null } | null;
+  notice?: string | null;
+  replanning?: boolean;
 };
 
 const RELATIONSHIP: Record<string, string> = {
@@ -75,7 +80,7 @@ export default function ProposalCard({
   onRespond: Respond;
   busy?: boolean;
 }) {
-  const { other, why, shared_tags, icebreakers } = proposal;
+  const { other, why, shared_tags, icebreakers, mutual_connections } = proposal;
   const expiresAt = Date.parse(proposal.expires_at);
   const [now, setNow] = useState(() => Date.now());
   // Ring total = the time left when this proposal first showed up (the server's TTL, 45s by default).
@@ -155,6 +160,11 @@ export default function ProposalCard({
         </div>
 
         <p className="mt-4 text-sm text-neutral-800">{why}</p>
+        {mutual_connections && mutual_connections.length > 0 && (
+          <p className="mt-2 text-xs font-semibold text-neutral-500">
+            You both follow {mutual_connections.join(", ")}
+          </p>
+        )}
         <div className="mt-3 flex flex-wrap gap-2">
           {shared_tags.map((t) => (
             <span key={t} className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">

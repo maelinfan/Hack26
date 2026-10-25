@@ -132,7 +132,10 @@
     {"follower_id": "ava", "followee_id": "riley", "close_friend": false},
     {"follower_id": "ava", "followee_id": "priya", "close_friend": false},
     {"follower_id": "marcus", "followee_id": "zoe", "close_friend": false},
-    {"follower_id": "devon", "followee_id": "luca", "close_friend": false}
+    {"follower_id": "devon", "followee_id": "luca", "close_friend": false},
+    {"follower_id": "maya", "followee_id": "ava", "close_friend": false},
+    {"follower_id": "jordan", "followee_id": "ava", "close_friend": false},
+    {"follower_id": "priya", "followee_id": "ava", "close_friend": false}
   ],
   "filters": [
     {"user_id": "maya", "age_min": 21, "age_max": 30, "genders": ["woman", "man", "nonbinary"], "follow_statuses": ["mutual", "following", "anyone"], "radius_mi": 1},

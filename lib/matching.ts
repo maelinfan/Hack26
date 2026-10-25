@@ -91,10 +91,33 @@ export function sharedTags(me: User, other: User): string[] {
   return [...new Set([...exact, ...adjacent])];
 }
 
+// People both users follow (first names, up to 3), excluding the two of them. Real data from the
+// follow graph, so the AI can mention it without inventing anything.
+export function mutualConnections(aId: string, bId: string, follows: Follow[], names: Map<string, string>) {
+  const aFollows = new Set(follows.filter((f) => f.follower_id === aId).map((f) => f.followee_id));
+  const common = new Set(
+    follows
+      .filter((f) => f.follower_id === bId && aFollows.has(f.followee_id) && f.followee_id !== aId && f.followee_id !== bId)
+      .map((f) => f.followee_id),
+  );
+  return [...common]
+    .map((id) => names.get(id))
+    .filter((n): n is string => !!n)
+    .sort()
+    .slice(0, 3);
+}
+
 // What the AI is shown about one candidate. Shared with the cache warm-up so both build
 // identical inputs (and therefore identical cache keys).
-export function toRerankCandidate(me: User, other: User, score: number): RerankCandidate {
-  return { id: other.id, name: other.name, tags: other.tags, shared_tags: sharedTags(me, other), score };
+export function toRerankCandidate(me: User, other: User, score: number, mutual: string[]): RerankCandidate {
+  return {
+    id: other.id,
+    name: other.name,
+    tags: other.tags,
+    shared_tags: sharedTags(me, other),
+    mutual_connections: mutual,
+    score,
+  };
 }
 
 // ---- one match at a time ---------------------------------------------------------------
@@ -158,7 +181,7 @@ export function rematchPair(a: string, b: string, first?: string) {
   });
 }
 
-type Scored = { user: User; score: number };
+type Scored = { user: User; score: number; mutual: string[] };
 
 // Steps 1-3 (no AI): who is online, hard filters, soft score. Returns null if this user can't
 // be matched right now (offline or already in a proposal), else the scored shortlist (maybe empty).
@@ -178,23 +201,25 @@ async function shortlistFor(userId: string): Promise<{ me: User; shortlist: Scor
 
   // 2. Everything else we need, in parallel.
   const ids = presences.map((p) => p.user_id);
-  const [usersRes, filtersRes, followsRes, busyRes, historyRes] = await Promise.all([
+  const [usersRes, filtersRes, followsRes, busyRes, historyRes, namesRes] = await Promise.all([
     db.from("users").select("*").in("id", ids),
     db.from("filters").select("*").in("user_id", ids),
-    db.from("follows").select("*").or(`follower_id.eq.${userId},followee_id.eq.${userId}`),
+    db.from("follows").select("*"), // the whole (small) graph: mutual connections need other people's edges
     // "In a proposal" = pending, both_accepted, or confirmed (they're about to meet someone).
     db.from("proposals").select("user_a,user_b").in("state", ["pending", "both_accepted", "confirmed"]),
     db
       .from("proposals")
       .select("user_a,user_b,state,decline_reason,created_at")
       .or(`user_a.eq.${userId},user_b.eq.${userId}`),
+    db.from("users").select("id,name"), // names of everyone, online or not (for mutual connections)
   ]);
-  for (const r of [usersRes, filtersRes, followsRes, busyRes, historyRes]) {
+  for (const r of [usersRes, filtersRes, followsRes, busyRes, historyRes, namesRes]) {
     if (r.error) throw new Error(r.error.message);
   }
   const users = new Map((usersRes.data as User[]).map((u) => [u.id, u]));
   const filters = new Map((filtersRes.data as Filters[]).map((f) => [f.user_id, f]));
   const follows = followsRes.data as Follow[];
+  const names = new Map((namesRes.data ?? []).map((u) => [u.id as string, u.name as string]));
 
   const busy = new Set<string>();
   for (const p of busyRes.data ?? []) {
@@ -234,7 +259,9 @@ async function shortlistFor(userId: string): Promise<{ me: User; shortlist: Scor
     // (No block list yet: /api/block is a UI-only stub.)
 
     const score = matchScore(me, other, myView, myFilters);
-    if (score >= SCORE_THRESHOLD) scored.push({ user: other, score });
+    if (score >= SCORE_THRESHOLD) {
+      scored.push({ user: other, score, mutual: mutualConnections(userId, p.user_id, follows, names) });
+    }
   }
   scored.sort((a, b) => b.score - a.score || a.user.id.localeCompare(b.user.id));
   return { me, shortlist: scored.slice(0, TOP_N) };
@@ -248,7 +275,7 @@ async function match(userId: string): Promise<string | null> {
   // 4. AI picks one of the shortlist and writes the explanations + icebreakers.
   const result = await rerankCandidates(
     { id: me.id, name: me.name, tags: me.tags },
-    shortlist.map((c) => toRerankCandidate(me, c.user, c.score)),
+    shortlist.map((c) => toRerankCandidate(me, c.user, c.score, c.mutual)),
   );
   const chosen = shortlist.find((c) => c.user.id === result.chosen_id) ?? shortlist[0];
 

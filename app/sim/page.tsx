@@ -54,6 +54,7 @@ export default function SimPage() {
   const [note, setNote] = useState("");
   const mapRef = useRef<HTMLDivElement>(null);
   const dragging = useRef<string | null>(null);
+  const lastDragAt = useRef<Record<string, number>>({});
   const view = VIEWS[viewKey];
 
   useEffect(() => {
@@ -61,6 +62,39 @@ export default function SimPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPins(loadPins());
     setLoaded(true);
+  }, []);
+
+  // Phones using real GPS: pull everyone's live position (GET /api/sim/presence) so their pins
+  // move on this map. Only people who are "on" are followed, and not while being dragged here.
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch("/api/sim/presence", { cache: "no-store" });
+        const rows = await res.json();
+        if (cancelled || !Array.isArray(rows)) return;
+        setPins((prev) => {
+          let next = prev;
+          for (const r of rows as { user_id: string; lat: number; lng: number; active: boolean }[]) {
+            if (!r.active || dragging.current === r.user_id) continue;
+            if (Date.now() - (lastDragAt.current[r.user_id] ?? 0) < 3000) continue; // just dragged here
+            const cur = prev[r.user_id];
+            if (cur && Math.abs(cur.lat - r.lat) < 1e-5 && Math.abs(cur.lng - r.lng) < 1e-5) continue;
+            if (next === prev) next = { ...prev };
+            next[r.user_id] = { lat: r.lat, lng: r.lng };
+          }
+          return next;
+        });
+      } catch {
+        // server not reachable: keep the pins as they are
+      }
+    };
+    tick();
+    const id = setInterval(tick, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
 
   const toPct = (p: Pin) => ({
@@ -84,6 +118,7 @@ export default function SimPage() {
 
   function endDrag(id: string) {
     dragging.current = null;
+    lastDragAt.current[id] = Date.now();
     const p = pinsRef.current[id];
     try {
       localStorage.setItem(PINS_KEY, JSON.stringify(pinsRef.current));

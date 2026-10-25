@@ -50,6 +50,35 @@ const writeUntil = (userId: string, iso: string | null) => {
   }
 };
 
+// Optional real GPS, remembered per tab: when on, the phone's own position replaces the /sim pin.
+const GPS_KEY = "gps:enabled";
+const readGps = () => {
+  try {
+    return sessionStorage.getItem(GPS_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+const writeGps = (enabled: boolean) => {
+  try {
+    sessionStorage.setItem(GPS_KEY, enabled ? "1" : "0");
+  } catch {
+    // storage unavailable: ignore
+  }
+};
+
+// One GPS reading, or null if the browser has none or the person said no.
+function currentPosition(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5) }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 },
+    );
+  });
+}
+
 function formatRemaining(ms: number) {
   const total = Math.ceil(ms / 1000);
   const h = Math.floor(total / 3600);
@@ -70,6 +99,8 @@ export default function NearbyPage() {
   const [live, setLive] = useState<{ proposal: ApiProposal; skewMs: number } | null>(null);
   const [notice, setNotice] = useState<"expired" | "declined" | null>(null);
   const [responding, setResponding] = useState(false);
+  const [useGps, setUseGps] = useState(readGps);
+  const lastSent = useRef<{ lat: number; lng: number; t: number } | null>(null);
   const pollRef = useRef<(() => Promise<void>) | null>(null);
   const lastSeen = useRef<{ id: string; state: string } | null>(null);
   const router = useRouter();
@@ -113,6 +144,31 @@ export default function NearbyPage() {
 
   const remaining = endsAt === null ? 0 : Math.max(0, endsAt - now);
   const on = endsAt !== null && remaining > 0;
+
+  // Real GPS: while Meet nearby is on, follow the phone and tell the server when it has moved
+  // (about 15 m or every 10 s, not on every GPS tick). No `minutes`, so the open window is untouched.
+  useEffect(() => {
+    if (!on || !useGps || !userId || !("geolocation" in navigator)) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (p) => {
+        const lat = +p.coords.latitude.toFixed(5);
+        const lng = +p.coords.longitude.toFixed(5);
+        const t = Date.now();
+        const prev = lastSent.current;
+        const movedMeters = prev ? Math.hypot((lat - prev.lat) * 111_000, (lng - prev.lng) * 96_000) : Infinity;
+        if (prev && movedMeters < 15 && t - prev.t < 10_000) return;
+        lastSent.current = { lat, lng, t };
+        fetch("/api/presence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId, lat, lng }),
+        }).catch(() => {});
+      },
+      () => {}, // no reading right now: keep the last known position
+      { enableHighAccuracy: true, maximumAge: 5000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [on, useGps, userId]);
 
   // While on, poll GET /api/proposal every 1.5s. Stops on toggle off / unmount.
   useEffect(() => {
@@ -180,10 +236,13 @@ export default function NearbyPage() {
     setBusy(true);
     setError(null);
     try {
+      const gps = useGps ? await currentPosition() : null;
+      if (useGps && !gps) setError("Couldn't read your location, so the demo position is used instead.");
+      const spot = gps ?? pinFor(user.id);
       const res = await fetch("/api/presence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, ...pinFor(user.id), minutes: mins }),
+        body: JSON.stringify({ user_id: user.id, ...spot, minutes: mins }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok || !body?.active || !body.available_until) throw new Error(body?.error ?? `Request failed (${res.status})`);
@@ -266,6 +325,24 @@ export default function NearbyPage() {
           />
         </button>
       </div>
+
+      <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-xl border border-neutral-200 p-4">
+        <input
+          type="checkbox"
+          checked={useGps}
+          onChange={(e) => {
+            setUseGps(e.target.checked);
+            writeGps(e.target.checked);
+          }}
+          className="h-5 w-5 shrink-0 accent-pink-500"
+        />
+        <span className="flex-1">
+          <span className="block font-semibold">Use my real location</span>
+          <span className="block text-sm text-neutral-500">
+            Your position updates as you move. People you match with only see how close you are, never where you are.
+          </span>
+        </span>
+      </label>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-neutral-200">
         <Link href="/nearby/interests" className="flex items-center gap-3 p-4">

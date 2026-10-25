@@ -99,6 +99,8 @@ Res when active (A's view; B's view is mirrored, so `why` is the text written fo
 ```
 When `state` is `both_accepted` the plan is generating (UI shows "Finding a spot..."). When `confirmed`: `venue` = `{ "id","name","address","category","lat","lng","open_until" }`, plus `plan_reason` and `tool_calls` (for the AI panel).
 
+**Additive fields (live-features):** `mutual_connections: string[]` (first names of up to 3 people both users follow, may be empty; the `why` text may mention them), `walking: { you_minutes, other_minutes } | null` (walk time from each person to the venue, null until a venue exists), `notice: string | null` (set after a running-late re-plan, e.g. "Maya is running about 10 min late. Plan updated: moved from Epoch Coffee to Jo's Coffee."), `replanning: boolean` (true while the venue agent is re-planning after `/late`; keep showing the current venue). The `venue` object itself is unchanged.
+
 `tool_calls` is an ordered array, one entry per tool the venue agent called (the same shape is stored in `proposals.tool_calls`):
 ```
 [ { "step": 1, "tool": "get_nearby_venues", "args": { "lat":30.29, "lng":-97.74, "radius_m":1200, "category":"cafe" },
@@ -115,6 +117,14 @@ Req: `{ "user_id":"maya", "response":"accept"|"decline", "reason":"not_now"|"not
 Res: `{ "state":"pending"|"both_accepted"|"declined", "ok":true }`
 `reason` is only used with `decline` and defaults to `not_now`. A second answer from the same side is ignored (still `200`, state unchanged). Errors: `404` unknown proposal, `403` user not in it, `409 { ok:false, error, state }` if it is no longer pending (already declined, expired or accepted by both).
 Other ways a proposal ends: the user turns "Meet nearby" off (`DELETE /api/presence`) or a pin drag puts a pending pair out of range. Both free the other person, and the other sees `last_outcome` once.
+
+### POST /api/proposal/:id/late
+Req: `{ "user_id":"maya", "minutes":10 }` (5-30). Only for a `confirmed` proposal. The venue agent re-plans around the new meeting time, with the search shifted toward the person running late, and may keep the same venue if it still fits.
+Res: `{ "ok":true, "replanning":true }` immediately; poll `GET /api/proposal` (about 10-15s): `venue`, `plan_reason`, `tool_calls` are replaced, `notice` is set, `replanning` returns to false. Errors: `404` unknown, `403` user not in it, `409 { ok:false, error }` if not confirmed, already re-planning, or re-planned twice already.
+
+### GET /api/sim/presence  (demo control panel only)
+`200 [{ "user_id":"maya", "lat":30.2849, "lng":-97.7341, "active":true }]`: everyone's current position and whether "Meet nearby" is on. Exists only so `/sim` can show phones' real GPS positions moving on its map. This is the one place coordinates leave the server; it is a demo tool, and the app's own screens never receive another person's coordinates (§2).
+Phones with "Use my real location" on send `POST /api/presence { user_id, lat, lng }` (no `minutes`) as the person moves; that only moves them, as defined above.
 
 ### POST /api/sim/reset
 Clears proposals and cooldowns, reseeds personas. Used before each demo take.
